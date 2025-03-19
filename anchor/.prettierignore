@@ -1,8 +1,0 @@
-.DS_Store
-.anchor
-build
-dist
-.next
-node_modules
-target
-test-ledger

@@ -18,6 +18,6 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
 anchor-lang = { version = "0.30.1", features = ["init-if-needed"] }
-anchor-spl = { version = "0.30.1", features = ["associated_token", "metadata", "token_2022"] }
+anchor-spl = { version = "0.30.1", features = ["metadata"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"

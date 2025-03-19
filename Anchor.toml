@@ -7,14 +7,14 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-ruma = "W1DWMF7dqukW5wSzEoDPsRPSyMB8oyAgcooQCn9G8UE"
+ruma = "RUMA3n7Uigup7oprRMKEExme1g5mkcNik7FX6TJphYF"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = "ruma-wallet.json"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "bun test --timeout 1000000"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
