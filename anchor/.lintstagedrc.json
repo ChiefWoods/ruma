@@ -1,3 +1,0 @@
-{
-  "programs/ruma/src/**/*.rs": "cargo fmt --"
-}
