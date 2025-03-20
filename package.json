@@ -3,7 +3,8 @@
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@coral-xyz/anchor": "^0.30.1",
@@ -14,6 +15,8 @@
     "@solana/web3.js": "^1.95.4",
     "@types/bn.js": "^5.1.0",
     "@types/bun": "^1.1.13",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
     "prettier": "^3.3.3",
     "typescript": "^4.3.5"
   }
