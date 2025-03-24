@@ -1,16 +1,41 @@
-use anchor_lang::{prelude::*, Discriminator};
+use anchor_lang::prelude::*;
 use num_derive::*;
 
+use crate::error::RumaError;
+
 #[account]
+#[derive(InitSpace)]
 pub struct Attendee {
-    pub bump: u8,               // 1
-    pub user: Pubkey,           // 32
+    /// Bump used to derive address
+    pub bump: u8, // 1
+    /// Authority of the attendee
+    pub user: Pubkey, // 32
+    /// Event registered
+    pub event: Pubkey, // 32
+    /// Approval status of the attendee
     pub status: AttendeeStatus, // 1 + 1
 }
 
 impl Attendee {
-    // discriminator, status
-    pub const MIN_SPACE: usize = Attendee::DISCRIMINATOR.len() + 1 + 32 + (1 + 1);
+    pub fn invalidate(&self) -> Result<()> {
+        require!(
+            self.status != AttendeeStatus::CheckedIn,
+            RumaError::AttendeeAlreadyCheckedIn
+        );
+
+        Ok(())
+    }
+    pub fn invariant(&self) -> Result<()> {
+        require_keys_neq!(self.user, Pubkey::default(), RumaError::InvalidAttendeeUser);
+
+        require_keys_neq!(
+            self.event,
+            Pubkey::default(),
+            RumaError::InvalidAttendeeEvent
+        );
+
+        Ok(())
+    }
 }
 
 #[derive(
@@ -23,6 +48,7 @@ impl Attendee {
     PartialEq,
     Eq,
     Default,
+    InitSpace,
 )]
 pub enum AttendeeStatus {
     #[default]

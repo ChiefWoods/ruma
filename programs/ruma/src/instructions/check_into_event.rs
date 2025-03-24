@@ -1,151 +1,74 @@
-use crate::{constants::*, error::*, state::*};
-use anchor_lang::{
-    prelude::*,
-    solana_program::{pubkey::PUBKEY_BYTES, sysvar::instructions},
-};
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    metadata::{
-        mpl_token_metadata::{instructions::PrintV2CpiBuilder, EDITION_MARKER_BIT_SIZE},
-        MasterEditionAccount, Metadata, MetadataAccount,
-    },
-    token_interface::{mint_to, Mint, MintTo, TokenAccount, TokenInterface},
+use anchor_lang::prelude::*;
+use mpl_core::{
+    accounts::BaseCollectionV1,
+    instructions::CreateV2CpiBuilder,
+    types::{Edition, Plugin, PluginAuthority, PluginAuthorityPair},
+    ID as MPL_CORE_ID,
 };
 
-pub fn check_into_event(ctx: Context<CheckIntoEvent>, edition_number: u64) -> Result<()> {
-    require!(
-        ctx.accounts.attendee.status == AttendeeStatus::Approved,
-        RumaError::AttendeeNotApproved
-    );
-
-    mint_to(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo {
-                mint: ctx.accounts.edition_mint.to_account_info(),
-                to: ctx.accounts.edition_token_account.to_account_info(),
-                authority: ctx.accounts.organizer.to_account_info(),
-            },
-        )
-        .with_signer(&[&[
-            USER_SEED,
-            ctx.accounts.authority.key.as_ref(),
-            &[ctx.accounts.organizer.bump],
-        ]]),
-        1,
-    )?;
-
-    PrintV2CpiBuilder::new(&ctx.accounts.token_metadata_program.to_account_info())
-        .edition_number(edition_number)
-        .payer(&ctx.accounts.payer.to_account_info())
-        .edition_mint(&ctx.accounts.edition_mint.to_account_info(), true)
-        .edition_mint_authority(&ctx.accounts.organizer.to_account_info())
-        .edition_token_account(&ctx.accounts.edition_token_account.to_account_info())
-        .edition_token_account_owner(&ctx.accounts.registrant.to_account_info())
-        .edition_metadata(&ctx.accounts.edition_metadata.to_account_info())
-        .edition(&ctx.accounts.edition.to_account_info())
-        .edition_marker_pda(&ctx.accounts.edition_marker_pda.to_account_info())
-        .master_token_account(&ctx.accounts.master_token_account.to_account_info())
-        .master_token_account_owner(&ctx.accounts.organizer.to_account_info(), true)
-        .master_metadata(&ctx.accounts.master_metadata.to_account_info())
-        .master_edition(&ctx.accounts.master_edition.to_account_info())
-        .update_authority(&ctx.accounts.organizer.to_account_info())
-        .spl_token_program(&ctx.accounts.token_program.to_account_info())
-        .spl_ata_program(&ctx.accounts.associated_token_program.to_account_info())
-        .system_program(&ctx.accounts.system_program.to_account_info())
-        .sysvar_instructions(&ctx.accounts.sysvar_instructions.to_account_info())
-        .invoke_signed(&[&[
-            USER_SEED,
-            ctx.accounts.authority.key.as_ref(),
-            &[ctx.accounts.organizer.bump],
-        ]])?;
-
-    ctx.accounts
-        .registrant
-        .badges
-        .push(ctx.accounts.edition_mint.key());
-
-    ctx.accounts.attendee.status = AttendeeStatus::CheckedIn;
-
-    Ok(())
-}
+use crate::{
+    constants::USER_SEED,
+    error::RumaError,
+    state::{Attendee, AttendeeStatus, Event, User},
+};
 
 #[derive(Accounts)]
-#[instruction(edition_number: u64)]
 pub struct CheckIntoEvent<'info> {
-    #[account(
-        mut,
-        address = RUMA_WALLET @ RumaError::UnauthorizedMasterWallet
-    )]
-    pub payer: Signer<'info>,
+    #[account(mut)]
     pub authority: Signer<'info>,
+    #[account(mut)]
+    pub asset: Signer<'info>,
     #[account(
         seeds = [USER_SEED, authority.key().as_ref()],
         bump = organizer.bump,
+        has_one = authority
     )]
-    pub organizer: Box<Account<'info, User>>,
+    pub organizer: Account<'info, User>,
+    pub user: Account<'info, User>,
+    #[account(
+        has_one = organizer,
+        has_one = badge
+    )]
+    pub event: Account<'info, Event>,
     #[account(
         mut,
-        realloc = registrant.to_account_info().data_len() + PUBKEY_BYTES,
-        realloc::payer = payer,
-        realloc::zero = false,
+        has_one = user,
+        has_one = event,
     )]
-    pub registrant: Box<Account<'info, User>>,
+    pub attendee: Account<'info, Attendee>,
     #[account(mut)]
-    pub attendee: Box<Account<'info, Attendee>>,
-    #[account(
-        init,
-        payer = payer,
-        mint::decimals = 0,
-        mint::authority = organizer,
-        mint::freeze_authority = organizer,
-        mint::token_program = token_program,
-    )]
-    pub edition_mint: InterfaceAccount<'info, Mint>,
-    #[account(
-        init,
-        payer = payer,
-        associated_token::mint = edition_mint,
-        associated_token::authority = registrant,
-        associated_token::token_program = token_program,
-    )]
-    pub edition_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
-    /// CHECK: initialized by Metaplex Token Metadata program
-    #[account(
-        mut,
-        seeds = [b"metadata", token_metadata_program.key().as_ref(), edition_mint.key().as_ref()],
-        bump,
-        seeds::program = token_metadata_program.key(),
-    )]
-    pub edition_metadata: UncheckedAccount<'info>,
-    /// CHECK: initialized by Metaplex Token Metadata program
-    #[account(
-        mut,
-        seeds = [b"metadata", token_metadata_program.key().as_ref(), edition_mint.key().as_ref(), b"edition"],
-        bump,
-        seeds::program = token_metadata_program.key(),
-    )]
-    pub edition: UncheckedAccount<'info>,
-    /// CHECK: initialized by Metaplex Token Metadata program
-    #[account(
-        mut,
-        seeds = [b"metadata", token_metadata_program.key().as_ref(), master_mint.key().as_ref(), b"edition", edition_number.checked_div(EDITION_MARKER_BIT_SIZE).unwrap().to_string().as_bytes()],
-        bump,
-        seeds::program = token_metadata_program.key(),
-    )]
-    pub edition_marker_pda: UncheckedAccount<'info>,
-    pub master_mint: Box<InterfaceAccount<'info, Mint>>,
-    pub master_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
-    pub master_metadata: Box<Account<'info, MetadataAccount>>,
-    #[account(mut)]
-    pub master_edition: Box<Account<'info, MasterEditionAccount>>,
-    pub token_metadata_program: Program<'info, Metadata>,
-    pub token_program: Interface<'info, TokenInterface>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub badge: Account<'info, BaseCollectionV1>,
     pub system_program: Program<'info, System>,
-    /// CHECK: Sysvar instructions
-    #[account(
-        address = instructions::ID,
-    )]
-    pub sysvar_instructions: UncheckedAccount<'info>,
+    #[account(address = MPL_CORE_ID)]
+    /// CHECK: MPL Core program
+    pub mpl_core_program: UncheckedAccount<'info>,
+}
+
+impl CheckIntoEvent<'_> {
+    pub fn handler(ctx: Context<CheckIntoEvent>) -> Result<()> {
+        require!(
+            ctx.accounts.attendee.status == AttendeeStatus::Approved,
+            RumaError::AttendeeNotApproved
+        );
+
+        ctx.accounts.attendee.status = AttendeeStatus::CheckedIn;
+
+        CreateV2CpiBuilder::new(&ctx.accounts.mpl_core_program.to_account_info())
+            .asset(&ctx.accounts.asset.to_account_info())
+            .authority(Some(&ctx.accounts.authority.to_account_info()))
+            .owner(Some(&ctx.accounts.user.to_account_info()))
+            .payer(&ctx.accounts.authority.to_account_info())
+            .name(ctx.accounts.badge.name.clone())
+            .uri(ctx.accounts.badge.uri.clone())
+            .plugins(vec![PluginAuthorityPair {
+                authority: Some(PluginAuthority::None),
+                plugin: Plugin::Edition(Edition {
+                    number: ctx.accounts.badge.num_minted,
+                }),
+            }])
+            .system_program(&ctx.accounts.system_program.to_account_info())
+            .invoke()?;
+
+        Ok(())
+    }
 }

@@ -1,76 +1,108 @@
-use crate::{constants::*, error::*, state::*};
 use anchor_lang::prelude::*;
+use mpl_core::{
+    instructions::CreateCollectionV2CpiBuilder,
+    types::{MasterEdition, Plugin, PluginAuthority, PluginAuthorityPair},
+    ID as MPL_CORE_ID,
+};
 
-pub fn create_event(
-    ctx: Context<CreateEvent>,
-    is_public: bool,
-    needs_approval: bool,
-    name: String,
-    image: String,
-    capacity: Option<i32>,
-    start_timestamp: Option<i64>,
-    end_timestamp: Option<i64>,
-    location: Option<String>,
-    about: Option<String>,
-) -> Result<()> {
-    require!(!name.is_empty(), RumaError::EventNameRequired);
-    // name length is not validated here because it is used to derive seed for Event account,
-    // which would throw when name is longer than 32 bytes
-    require!(!image.is_empty(), RumaError::EventImageRequired);
-    require!(
-        image.len() <= MAX_EVENT_IMAGE_LENGTH,
-        RumaError::EventImageTooLong
-    );
+use crate::{
+    constants::{EVENT_SEED, MAX_EVENT_IMAGE_LENGTH},
+    error::RumaError,
+    state::{Event, User},
+};
 
-    let event = &mut ctx.accounts.event;
-
-    event.bump = ctx.bumps.event;
-    event.organizer = ctx.accounts.organizer.key();
-    event.data = EventData {
-        is_public,
-        needs_approval,
-        name,
-        image,
-        capacity,
-        start_timestamp,
-        end_timestamp,
-        location,
-        about,
-    };
-    event.badge = None;
-    event.attendees = Vec::new();
-
-    Ok(())
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct CreateEventArgs {
+    pub public: bool,
+    pub approval_required: bool,
+    pub capacity: Option<u32>,
+    pub start_timestamp: Option<i64>,
+    pub end_timestamp: Option<i64>,
+    pub event_name: String,
+    pub event_image: String,
+    pub badge_name: String,
+    pub badge_uri: String,
+    pub location: Option<String>,
+    pub about: Option<String>,
 }
 
 #[derive(Accounts)]
-#[instruction(
-    _is_public: bool,
-    _needs_approval: bool,
-    name: String,
-    image: String,
-    _capacity: Option<i32>,
-    _start_timestamp: Option<i64>,
-    _end_timestamp: Option<i64>,
-    location: Option<String>,
-    about: Option<String>,
-)]
+#[instruction(args: CreateEventArgs)]
 pub struct CreateEvent<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
+    #[account(mut)]
+    pub collection: Signer<'info>,
+    #[account(has_one = authority)]
+    pub user: Account<'info, User>,
     #[account(
-        seeds = [USER_SEED, authority.key().as_ref()],
-        bump = organizer.bump,
-    )]
-    pub organizer: Account<'info, User>,
-    #[account(
-        constraint = name.len() <= MAX_EVENT_NAME_LENGTH @ RumaError::EventNameTooLong,
         init,
-        space = Event::MIN_SPACE + name.len() + image.len() + location.map(|s| s.len()).unwrap_or(0) + about.map(|s| s.len()).unwrap_or(0),
-        seeds = [EVENT_SEED, organizer.key().as_ref(), name.as_bytes()],
-        bump,
         payer = authority,
+        space = Event::space(&args.event_name, &args.event_image, args.location.as_deref(), args.about.as_deref()),
+        seeds = [EVENT_SEED, user.key().as_ref(), collection.key().as_ref()],
+        bump,
     )]
     pub event: Account<'info, Event>,
     pub system_program: Program<'info, System>,
+    #[account(address = MPL_CORE_ID)]
+    /// CHECK: MPL Core program
+    pub mpl_core_program: UncheckedAccount<'info>,
+}
+
+impl CreateEvent<'_> {
+    pub fn handler(ctx: Context<CreateEvent>, args: CreateEventArgs) -> Result<()> {
+        require!(
+            args.event_name.len() <= MAX_EVENT_IMAGE_LENGTH,
+            RumaError::EventNameTooLong
+        );
+        require!(
+            args.event_image.len() <= MAX_EVENT_IMAGE_LENGTH,
+            RumaError::EventImageTooLong
+        );
+
+        let start_timestamp: Option<i64> = match args.start_timestamp {
+            Some(timestamp) => Some(timestamp),
+            None => Some(Clock::get()?.unix_timestamp),
+        };
+
+        if args.end_timestamp.is_some() {
+            require!(
+                start_timestamp.unwrap() < args.end_timestamp.unwrap(),
+                RumaError::InvalidEventTime
+            );
+        };
+
+        ctx.accounts.event.set_inner(Event {
+            bump: ctx.bumps.event,
+            organizer: ctx.accounts.user.key(),
+            public: args.public,
+            approval_required: args.approval_required,
+            capacity: args.capacity,
+            start_timestamp,
+            end_timestamp: args.end_timestamp,
+            badge: ctx.accounts.collection.key(),
+            name: args.event_name,
+            image: args.event_image,
+            location: args.location,
+            about: args.about,
+        });
+
+        CreateCollectionV2CpiBuilder::new(&ctx.accounts.mpl_core_program.to_account_info())
+            .collection(&ctx.accounts.collection.to_account_info())
+            .payer(&ctx.accounts.authority.to_account_info())
+            .name(args.badge_name.clone())
+            .uri(args.badge_uri.clone())
+            .plugins(vec![PluginAuthorityPair {
+                authority: Some(PluginAuthority::None),
+                plugin: Plugin::MasterEdition(MasterEdition {
+                    name: Some(args.badge_name.clone()),
+                    uri: Some(args.badge_uri.clone()),
+                    max_supply: args.capacity,
+                }),
+            }])
+            .system_program(&ctx.accounts.system_program.to_account_info())
+            .invoke()?;
+
+        ctx.accounts.event.invariant()
+    }
 }
