@@ -1,16 +1,19 @@
-import { Program } from '@coral-xyz/anchor';
-import { Ruma } from '../target/types/ruma';
 import { PublicKey } from '@solana/web3.js';
+import { Ruma } from '../target/types/ruma';
+import { Program } from '@coral-xyz/anchor';
 
-export async function getUserAcc(program: Program<Ruma>, userPda: PublicKey) {
+export async function fetchUserAcc(program: Program<Ruma>, userPda: PublicKey) {
   return await program.account.user.fetchNullable(userPda);
 }
 
-export async function getEventAcc(program: Program<Ruma>, eventPda: PublicKey) {
+export async function fetchEventAcc(
+  program: Program<Ruma>,
+  eventPda: PublicKey
+) {
   return await program.account.event.fetchNullable(eventPda);
 }
 
-export async function getAttendeeAcc(
+export async function fetchAttendeeAcc(
   program: Program<Ruma>,
   attendeePda: PublicKey
 ) {
