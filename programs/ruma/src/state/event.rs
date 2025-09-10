@@ -8,10 +8,8 @@ pub struct Event {
     pub bump: u8, // 1
     /// Authority of the event
     pub organizer: Pubkey, // 32
-    /// Boolean indicating if the event is displayed publicly
-    pub public: bool, // 1
-    /// Boolean indicating if the event requires organizer approval
-    pub approval_required: bool, // 1
+    /// State flags
+    pub state_flags: u8, // 1
     /// Max amount of attendees
     pub capacity: Option<u32>, // 1 + 4
     /// Starting time of the event
@@ -31,10 +29,37 @@ pub struct Event {
 }
 
 impl Event {
+    // State flags
+    const IS_PUBLIC_FLAG: u8 = 1 << 0;
+    const APPROVAL_REQUIRED_FLAG: u8 = 1 << 1;
+
+    pub fn is_public(&self) -> bool {
+        (self.state_flags & Self::IS_PUBLIC_FLAG) != 0
+    }
+
+    pub fn set_is_public(&mut self, public: bool) {
+        if public {
+            self.state_flags |= Self::IS_PUBLIC_FLAG;
+        } else {
+            self.state_flags &= !Self::IS_PUBLIC_FLAG;
+        }
+    }
+
+    pub fn is_approved_required(&self) -> bool {
+        (self.state_flags & Self::APPROVAL_REQUIRED_FLAG) != 0
+    }
+
+    pub fn set_approved_required(&mut self, approved_required: bool) {
+        if approved_required {
+            self.state_flags |= Self::APPROVAL_REQUIRED_FLAG;
+        } else {
+            self.state_flags &= !Self::APPROVAL_REQUIRED_FLAG;
+        }
+    }
+
     pub const MIN_SPACE: usize = Event::DISCRIMINATOR.len()
         + 1
         + 32
-        + 1
         + 1
         + (1 + 4)
         + (1 + 8)

@@ -72,11 +72,18 @@ impl CreateEvent<'_> {
             );
         };
 
+        let public = if public { 0000_0001 } else { 0000_0000 };
+        let approval_required = if approval_required {
+            0000_0010
+        } else {
+            0000_0000
+        };
+        let state_flags = public | approval_required;
+
         ctx.accounts.event.set_inner(Event {
             bump: ctx.bumps.event,
             organizer: ctx.accounts.user.key(),
-            public: args.public,
-            approval_required: args.approval_required,
+            state_flags,
             capacity: args.capacity,
             start_timestamp,
             end_timestamp: args.end_timestamp,
