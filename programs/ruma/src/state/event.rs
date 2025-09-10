@@ -74,8 +74,8 @@ impl Event {
         Self::MIN_SPACE
             + name.len()
             + image.len()
-            + location.as_ref().map(|s| s.len()).unwrap_or(0)
-            + about.as_ref().map(|s| s.len()).unwrap_or(0)
+            + location.map(|s| s.len()).unwrap_or(0)
+            + about.map(|s| s.len()).unwrap_or(0)
     }
 
     pub fn invalidate(&self) -> Result<()> {

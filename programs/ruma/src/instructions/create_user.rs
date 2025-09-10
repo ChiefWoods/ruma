@@ -41,13 +41,17 @@ impl CreateUser<'_> {
             RumaError::UserImageTooLong
         );
 
-        ctx.accounts.user.set_inner(User {
+        let CreateUser {
+            authority, user, ..
+        } = ctx.accounts;
+
+        user.set_inner(User {
             bump: ctx.bumps.user,
-            authority: ctx.accounts.authority.key(),
+            authority: authority.key(),
             name,
             image,
         });
 
-        ctx.accounts.user.invariant()
+        user.invariant()
     }
 }

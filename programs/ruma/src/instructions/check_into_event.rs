@@ -2,8 +2,7 @@ use anchor_lang::prelude::*;
 use mpl_core::{
     accounts::BaseCollectionV1,
     instructions::CreateV2CpiBuilder,
-    types::{Edition, Plugin, PluginAuthority, PluginAuthorityPair},
-    ID as MPL_CORE_ID,
+    types::{Edition, Plugin, PluginAuthorityPair},
 };
 
 use crate::{
@@ -34,39 +33,49 @@ pub struct CheckIntoEvent<'info> {
         mut,
         has_one = user,
         has_one = event,
+        constraint = attendee.status != AttendeeStatus::CheckedIn @ RumaError::AttendeeAlreadyCheckedIn,
+        constraint = attendee.status == AttendeeStatus::Approved @ RumaError::AttendeeNotApproved,
     )]
     pub attendee: Account<'info, Attendee>,
     #[account(mut)]
     pub badge: Account<'info, BaseCollectionV1>,
     pub system_program: Program<'info, System>,
-    #[account(address = MPL_CORE_ID)]
     /// CHECK: MPL Core program
     pub mpl_core_program: UncheckedAccount<'info>,
 }
 
 impl CheckIntoEvent<'_> {
     pub fn handler(ctx: Context<CheckIntoEvent>) -> Result<()> {
-        require!(
-            ctx.accounts.attendee.status == AttendeeStatus::Approved,
-            RumaError::AttendeeNotApproved
-        );
+        let CheckIntoEvent {
+            attendee,
+            asset,
+            authority,
+            badge,
+            event,
+            mpl_core_program,
+            system_program,
+            user,
+            ..
+        } = ctx.accounts;
 
-        ctx.accounts.attendee.status = AttendeeStatus::CheckedIn;
+        event.invalidate()?;
 
-        CreateV2CpiBuilder::new(&ctx.accounts.mpl_core_program.to_account_info())
-            .asset(&ctx.accounts.asset.to_account_info())
-            .authority(Some(&ctx.accounts.authority.to_account_info()))
-            .owner(Some(&ctx.accounts.user.to_account_info()))
-            .payer(&ctx.accounts.authority.to_account_info())
-            .name(ctx.accounts.badge.name.clone())
-            .uri(ctx.accounts.badge.uri.clone())
+        attendee.status = AttendeeStatus::CheckedIn;
+
+        CreateV2CpiBuilder::new(&mpl_core_program.to_account_info())
+            .asset(&asset.to_account_info())
+            .authority(Some(&authority.to_account_info()))
+            .owner(Some(&user.to_account_info()))
+            .payer(&authority.to_account_info())
+            .name(badge.name.clone())
+            .uri(badge.uri.clone())
             .plugins(vec![PluginAuthorityPair {
-                authority: Some(PluginAuthority::None),
+                authority: None,
                 plugin: Plugin::Edition(Edition {
-                    number: ctx.accounts.badge.num_minted,
+                    number: badge.num_minted,
                 }),
             }])
-            .system_program(&ctx.accounts.system_program.to_account_info())
+            .system_program(&system_program.to_account_info())
             .invoke()?;
 
         Ok(())

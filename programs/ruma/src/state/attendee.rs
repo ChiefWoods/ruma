@@ -17,14 +17,6 @@ pub struct Attendee {
 }
 
 impl Attendee {
-    pub fn invalidate(&self) -> Result<()> {
-        require!(
-            self.status != AttendeeStatus::CheckedIn,
-            RumaError::AttendeeAlreadyCheckedIn
-        );
-
-        Ok(())
-    }
     pub fn invariant(&self) -> Result<()> {
         require_keys_neq!(self.user, Pubkey::default(), RumaError::InvalidAttendeeUser);
 

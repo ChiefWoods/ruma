@@ -25,13 +25,22 @@ pub struct RegisterForEvent<'info> {
 
 impl RegisterForEvent<'_> {
     pub fn handler(ctx: Context<RegisterForEvent>) -> Result<()> {
-        ctx.accounts.attendee.set_inner(Attendee {
+        let RegisterForEvent {
+            attendee,
+            event,
+            user,
+            ..
+        } = ctx.accounts;
+
+        event.invalidate()?;
+
+        attendee.set_inner(Attendee {
             bump: ctx.bumps.attendee,
-            user: ctx.accounts.user.key(),
-            event: ctx.accounts.event.key(),
+            user: user.key(),
+            event: event.key(),
             status: AttendeeStatus::default(),
         });
 
-        ctx.accounts.attendee.invariant()
+        attendee.invariant()
     }
 }

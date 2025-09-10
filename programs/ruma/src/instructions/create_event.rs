@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 use mpl_core::{
     instructions::CreateCollectionV2CpiBuilder,
     types::{MasterEdition, Plugin, PluginAuthority, PluginAuthorityPair},
-    ID as MPL_CORE_ID,
 };
 
 use crate::{
@@ -13,7 +12,7 @@ use crate::{
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct CreateEventArgs {
-    pub public: bool,
+    pub is_public: bool,
     pub approval_required: bool,
     pub capacity: Option<u32>,
     pub start_timestamp: Option<i64>,
@@ -44,72 +43,94 @@ pub struct CreateEvent<'info> {
     )]
     pub event: Account<'info, Event>,
     pub system_program: Program<'info, System>,
-    #[account(address = MPL_CORE_ID)]
     /// CHECK: MPL Core program
     pub mpl_core_program: UncheckedAccount<'info>,
 }
 
 impl CreateEvent<'_> {
     pub fn handler(ctx: Context<CreateEvent>, args: CreateEventArgs) -> Result<()> {
+        let CreateEventArgs {
+            about,
+            approval_required,
+            badge_name,
+            badge_uri,
+            capacity,
+            end_timestamp,
+            event_image,
+            event_name,
+            location,
+            is_public,
+            start_timestamp,
+        } = args;
+
         require!(
-            args.event_name.len() <= MAX_EVENT_IMAGE_LENGTH,
+            event_name.len() <= MAX_EVENT_IMAGE_LENGTH,
             RumaError::EventNameTooLong
         );
         require!(
-            args.event_image.len() <= MAX_EVENT_IMAGE_LENGTH,
+            event_image.len() <= MAX_EVENT_IMAGE_LENGTH,
             RumaError::EventImageTooLong
         );
 
-        let start_timestamp: Option<i64> = match args.start_timestamp {
+        let start_timestamp = match start_timestamp {
             Some(timestamp) => Some(timestamp),
             None => Some(Clock::get()?.unix_timestamp),
         };
 
-        if args.end_timestamp.is_some() {
+        if end_timestamp.is_some() {
             require!(
-                start_timestamp.unwrap() < args.end_timestamp.unwrap(),
+                start_timestamp.unwrap() < end_timestamp.unwrap(),
                 RumaError::InvalidEventTime
             );
         };
 
-        let public = if public { 0000_0001 } else { 0000_0000 };
+        let is_public = if is_public { 0000_0001 } else { 0000_0000 };
         let approval_required = if approval_required {
             0000_0010
         } else {
             0000_0000
         };
-        let state_flags = public | approval_required;
+        let state_flags = is_public | approval_required;
 
-        ctx.accounts.event.set_inner(Event {
+        let CreateEvent {
+            authority,
+            collection,
+            event,
+            mpl_core_program,
+            system_program,
+            user,
+        } = ctx.accounts;
+
+        event.set_inner(Event {
             bump: ctx.bumps.event,
-            organizer: ctx.accounts.user.key(),
+            organizer: user.key(),
             state_flags,
-            capacity: args.capacity,
+            capacity,
             start_timestamp,
-            end_timestamp: args.end_timestamp,
-            badge: ctx.accounts.collection.key(),
-            name: args.event_name,
-            image: args.event_image,
-            location: args.location,
-            about: args.about,
+            end_timestamp,
+            badge: collection.key(),
+            name: event_name,
+            image: event_image,
+            location: location,
+            about: about,
         });
 
-        CreateCollectionV2CpiBuilder::new(&ctx.accounts.mpl_core_program.to_account_info())
-            .collection(&ctx.accounts.collection.to_account_info())
-            .payer(&ctx.accounts.authority.to_account_info())
-            .name(args.badge_name.clone())
-            .uri(args.badge_uri.clone())
+        CreateCollectionV2CpiBuilder::new(&mpl_core_program.to_account_info())
+            .collection(&collection.to_account_info())
+            .payer(&authority.to_account_info())
+            .name(badge_name.clone())
+            .uri(badge_uri.clone())
             .plugins(vec![PluginAuthorityPair {
                 authority: Some(PluginAuthority::None),
                 plugin: Plugin::MasterEdition(MasterEdition {
-                    name: Some(args.badge_name.clone()),
-                    uri: Some(args.badge_uri.clone()),
-                    max_supply: args.capacity,
+                    name: Some(badge_name.clone()),
+                    uri: Some(badge_uri.clone()),
+                    max_supply: capacity,
                 }),
             }])
-            .system_program(&ctx.accounts.system_program.to_account_info())
+            .system_program(&system_program.to_account_info())
             .invoke()?;
 
-        ctx.accounts.event.invariant()
+        event.invariant()
     }
 }
