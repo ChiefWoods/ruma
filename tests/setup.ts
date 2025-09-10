@@ -19,7 +19,7 @@ export async function getBankrunSetup(accounts: AddedAccount[] = []) {
   );
 
   const provider = new BankrunProvider(context);
-  const program = new Program(idl as Ruma, provider);
+  const program = new Program<Ruma>(idl, provider);
 
   return {
     context,
