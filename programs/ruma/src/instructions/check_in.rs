@@ -47,13 +47,13 @@ pub struct CheckIn<'info> {
 impl CheckIn<'_> {
     pub fn handler(ctx: Context<CheckIn>) -> Result<()> {
         let CheckIn {
-            ticket,
             asset,
             authority,
             badge,
             event,
             mpl_core_program,
             system_program,
+            ticket,
             user,
             ..
         } = ctx.accounts;
@@ -65,6 +65,7 @@ impl CheckIn<'_> {
         CreateV2CpiBuilder::new(&mpl_core_program.to_account_info())
             .asset(&asset.to_account_info())
             .authority(Some(&authority.to_account_info()))
+            .collection(Some(&badge.to_account_info()))
             .owner(Some(&user.to_account_info()))
             .payer(&authority.to_account_info())
             .name(badge.name.clone())
@@ -72,7 +73,7 @@ impl CheckIn<'_> {
             .plugins(vec![PluginAuthorityPair {
                 authority: None,
                 plugin: Plugin::Edition(Edition {
-                    number: badge.num_minted,
+                    number: badge.num_minted + 1,
                 }),
             }])
             .system_program(&system_program.to_account_info())
