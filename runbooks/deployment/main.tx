@@ -17,3 +17,11 @@ action "deploy_ruma" "svm::deploy_program" {
     // This will make deployments instantaneous, but is deviating from how the deployments will take place on devnet/mainnet.
     instant_surfnet_deployment = true
 }
+
+action "clone_mpl_core" "svm::setup_surfnet" {
+    clone_program_account {
+        source_program_id = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        destination_program_id = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+    }
+}
+
