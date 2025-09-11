@@ -5,9 +5,10 @@ import { ProgramTestContext } from 'solana-bankrun';
 import { Ruma } from '../../target/types/ruma';
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
 import { getBankrunSetup } from '../setup';
-import { fetchEventAcc } from '../accounts';
-import { getEventPdaAndBump, getUserPdaAndBump } from '../pda';
+import { EventStateFlag, fetchEventAcc } from '../accounts';
+import { getEventPda, getUserPda } from '../pda';
 import { MAX_EVENT_IMAGE_LENGTH, MAX_EVENT_NAME_LENGTH } from '../constants';
+import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
 
 describe('createEvent', () => {
   let { context, provider, program } = {} as {
@@ -57,11 +58,11 @@ describe('createEvent', () => {
     const location = 'Location';
     const about = 'About';
     const collection = Keypair.generate();
-    const [userPda] = getUserPdaAndBump(wallet.publicKey);
+    const userPda = getUserPda(wallet.publicKey);
 
     await program.methods
       .createEvent({
-        public: isPublic,
+        isPublic,
         approvalRequired,
         capacity,
         startTimestamp,
@@ -77,20 +78,15 @@ describe('createEvent', () => {
         authority: wallet.publicKey,
         collection: collection.publicKey,
         user: userPda,
+        mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([wallet, collection])
       .rpc();
 
-    const [eventPda, eventBump] = getEventPdaAndBump(
-      userPda,
-      collection.publicKey
-    );
+    const eventPda = getEventPda(userPda, collection.publicKey);
     const eventAcc = await fetchEventAcc(program, eventPda);
 
-    expect(eventAcc.bump).toBe(eventBump);
     expect(eventAcc.organizer).toStrictEqual(userPda);
-    expect(eventAcc.public).toBe(isPublic);
-    expect(eventAcc.approvalRequired).toBe(approvalRequired);
     expect(eventAcc.capacity).toBe(capacity);
     expect(eventAcc.startTimestamp.toNumber()).toBe(startTimestamp.toNumber());
     expect(eventAcc.endTimestamp.toNumber()).toBe(endTimestamp.toNumber());
@@ -99,6 +95,11 @@ describe('createEvent', () => {
     expect(eventAcc.image).toBe(eventImage);
     expect(eventAcc.location).toBe(location);
     expect(eventAcc.about).toBe(about);
+
+    const stateFlags = new EventStateFlag(eventAcc.stateFlags);
+
+    expect(stateFlags.isPublic).toBe(isPublic);
+    expect(stateFlags.isApprovalRequired).toBe(approvalRequired);
 
     const collectionAcc = await context.banksClient.getAccount(eventAcc.badge);
 
@@ -119,12 +120,12 @@ describe('createEvent', () => {
     const location = 'Location';
     const about = 'About';
     const collection = Keypair.generate();
-    const [userPda] = getUserPdaAndBump(wallet.publicKey);
+    const userPda = getUserPda(wallet.publicKey);
 
     try {
       await program.methods
         .createEvent({
-          public: isPublic,
+          isPublic,
           approvalRequired,
           capacity,
           startTimestamp,
@@ -140,6 +141,7 @@ describe('createEvent', () => {
           authority: wallet.publicKey,
           collection: collection.publicKey,
           user: userPda,
+          mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([wallet, collection])
         .rpc();
@@ -165,7 +167,7 @@ describe('createEvent', () => {
     const location = 'Location';
     const about = 'About';
     const collection = Keypair.generate();
-    const [userPda] = getUserPdaAndBump(wallet.publicKey);
+    const userPda = getUserPda(wallet.publicKey);
 
     try {
       await program.methods
@@ -186,6 +188,7 @@ describe('createEvent', () => {
           authority: wallet.publicKey,
           collection: collection.publicKey,
           user: userPda,
+          mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([wallet, collection])
         .rpc();
@@ -211,7 +214,7 @@ describe('createEvent', () => {
     const location = 'Location';
     const about = 'About';
     const collection = Keypair.generate();
-    const [userPda] = getUserPdaAndBump(wallet.publicKey);
+    const userPda = getUserPda(wallet.publicKey);
 
     try {
       await program.methods
@@ -232,6 +235,7 @@ describe('createEvent', () => {
           authority: wallet.publicKey,
           collection: collection.publicKey,
           user: userPda,
+          mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([wallet, collection])
         .rpc();

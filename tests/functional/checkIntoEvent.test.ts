@@ -6,11 +6,8 @@ import { Ruma } from '../../target/types/ruma';
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
 import { getBankrunSetup } from '../setup';
 import { fetchAttendeeAcc } from '../accounts';
-import {
-  getAttendeePdaAndBump,
-  getEventPdaAndBump,
-  getUserPdaAndBump,
-} from '../pda';
+import { getAttendeePda, getEventPda, getUserPda } from '../pda';
+import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
 
 describe('checkIntoEvent', () => {
   let { context, provider, program } = {} as {
@@ -24,10 +21,10 @@ describe('checkIntoEvent', () => {
   );
 
   const collection = Keypair.generate();
-  const [userAPda] = getUserPdaAndBump(walletA.publicKey);
-  const [userBPda] = getUserPdaAndBump(walletB.publicKey);
-  const [eventPda] = getEventPdaAndBump(userAPda, collection.publicKey);
-  const [attendeePda] = getAttendeePdaAndBump(userBPda, eventPda);
+  const userAPda = getUserPda(walletA.publicKey);
+  const userBPda = getUserPda(walletB.publicKey);
+  const eventPda = getEventPda(userAPda, collection.publicKey);
+  const attendeePda = getAttendeePda(userBPda, eventPda);
 
   beforeEach(async () => {
     ({ context, provider, program } = await getBankrunSetup([
@@ -59,7 +56,7 @@ describe('checkIntoEvent', () => {
 
     await program.methods
       .createEvent({
-        public: true,
+        isPublic: true,
         approvalRequired: false,
         capacity: 100,
         startTimestamp: new BN(Number(unixTimestamp) + 1000 * 60 * 60),
@@ -75,6 +72,7 @@ describe('checkIntoEvent', () => {
         authority: walletA.publicKey,
         collection: collection.publicKey,
         user: userAPda,
+        mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([walletA, collection])
       .rpc();
@@ -119,6 +117,7 @@ describe('checkIntoEvent', () => {
         authority: walletA.publicKey,
         asset: asset.publicKey,
         attendee: attendeePda,
+        mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([walletA, asset])
       .rpc();
@@ -151,6 +150,7 @@ describe('checkIntoEvent', () => {
           authority: walletA.publicKey,
           asset: asset.publicKey,
           attendee: attendeePda,
+          mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([walletA, asset])
         .rpc();
@@ -180,6 +180,7 @@ describe('checkIntoEvent', () => {
         authority: walletA.publicKey,
         asset: asset.publicKey,
         attendee: attendeePda,
+        mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([walletA, asset])
       .rpc();
@@ -191,6 +192,7 @@ describe('checkIntoEvent', () => {
           authority: walletA.publicKey,
           asset: asset.publicKey,
           attendee: attendeePda,
+          mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([walletA, asset])
         .rpc();
@@ -204,7 +206,7 @@ describe('checkIntoEvent', () => {
 
   test('throws if checking in after event has ended', async () => {
     await program.methods
-      .updateAttendee({ rejected: {} })
+      .updateAttendee({ approved: {} })
       .accountsPartial({
         authority: walletA.publicKey,
         attendee: attendeePda,
@@ -237,6 +239,7 @@ describe('checkIntoEvent', () => {
           authority: walletA.publicKey,
           asset: asset.publicKey,
           attendee: attendeePda,
+          mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([walletA, asset])
         .rpc();

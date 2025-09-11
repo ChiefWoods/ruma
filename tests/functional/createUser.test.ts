@@ -6,7 +6,7 @@ import { Ruma } from '../../target/types/ruma';
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
 import { getBankrunSetup } from '../setup';
 import { fetchUserAcc } from '../accounts';
-import { getUserPdaAndBump } from '../pda';
+import { getUserPda } from '../pda';
 import { MAX_USER_IMAGE_LENGTH, MAX_USER_NAME_LENGTH } from '../constants';
 
 describe('createUser', () => {
@@ -47,10 +47,9 @@ describe('createUser', () => {
       .signers([wallet])
       .rpc();
 
-    const [userPda, userBump] = getUserPdaAndBump(wallet.publicKey);
+    const userPda = getUserPda(wallet.publicKey);
     const userAcc = await fetchUserAcc(program, userPda);
 
-    expect(userAcc.bump).toBe(userBump);
     expect(userAcc.authority).toStrictEqual(wallet.publicKey);
     expect(userAcc.name).toBe(name);
     expect(userAcc.image).toBe(image);

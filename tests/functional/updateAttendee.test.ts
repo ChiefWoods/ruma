@@ -6,11 +6,8 @@ import { Ruma } from '../../target/types/ruma';
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
 import { getBankrunSetup } from '../setup';
 import { fetchAttendeeAcc } from '../accounts';
-import {
-  getAttendeePdaAndBump,
-  getEventPdaAndBump,
-  getUserPdaAndBump,
-} from '../pda';
+import { getAttendeePda, getEventPda, getUserPda } from '../pda';
+import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
 
 describe('updateAttendee', () => {
   let { context, provider, program } = {} as {
@@ -24,9 +21,9 @@ describe('updateAttendee', () => {
   );
 
   const collection = Keypair.generate();
-  const [userAPda] = getUserPdaAndBump(walletA.publicKey);
-  const [userBPda] = getUserPdaAndBump(walletB.publicKey);
-  const [eventPda] = getEventPdaAndBump(userAPda, collection.publicKey);
+  const userAPda = getUserPda(walletA.publicKey);
+  const userBPda = getUserPda(walletB.publicKey);
+  const eventPda = getEventPda(userAPda, collection.publicKey);
 
   beforeEach(async () => {
     ({ context, provider, program } = await getBankrunSetup([
@@ -58,7 +55,7 @@ describe('updateAttendee', () => {
 
     await program.methods
       .createEvent({
-        public: true,
+        isPublic: true,
         approvalRequired: false,
         capacity: 100,
         startTimestamp: new BN(Number(unixTimestamp) + 1000 * 60 * 60),
@@ -74,6 +71,7 @@ describe('updateAttendee', () => {
         authority: walletA.publicKey,
         collection: collection.publicKey,
         user: userAPda,
+        mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([walletA, collection])
       .rpc();
@@ -101,7 +99,7 @@ describe('updateAttendee', () => {
   });
 
   test('update attendee status', async () => {
-    const [attendeePda] = getAttendeePdaAndBump(userBPda, eventPda);
+    const attendeePda = getAttendeePda(userBPda, eventPda);
 
     await program.methods
       .updateAttendee({ approved: {} })
@@ -133,7 +131,7 @@ describe('updateAttendee', () => {
     );
     context.setClock(clock);
 
-    const [attendeePda] = getAttendeePdaAndBump(userBPda, eventPda);
+    const attendeePda = getAttendeePda(userBPda, eventPda);
 
     try {
       await program.methods

@@ -1,3 +1,8 @@
+import { PublicKey } from '@solana/web3.js';
+import idl from '../target/idl/ruma.json';
+
+export const RUMA_PROGRAM_ID = new PublicKey(idl.address);
+
 export const MAX_USER_NAME_LENGTH = 32;
 export const MAX_USER_IMAGE_LENGTH = 200;
 export const MAX_EVENT_NAME_LENGTH = 32;

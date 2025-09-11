@@ -6,11 +6,8 @@ import { Ruma } from '../../target/types/ruma';
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
 import { getBankrunSetup } from '../setup';
 import { fetchAttendeeAcc } from '../accounts';
-import {
-  getAttendeePdaAndBump,
-  getEventPdaAndBump,
-  getUserPdaAndBump,
-} from '../pda';
+import { getAttendeePda, getEventPda, getUserPda } from '../pda';
+import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
 
 describe('registerForEvent', () => {
   let { context, provider, program } = {} as {
@@ -24,9 +21,8 @@ describe('registerForEvent', () => {
   );
 
   const collection = Keypair.generate();
-  const [userPda] = getUserPdaAndBump(walletA.publicKey);
-
-  const [eventPda] = getEventPdaAndBump(userPda, collection.publicKey);
+  const userPda = getUserPda(walletA.publicKey);
+  const eventPda = getEventPda(userPda, collection.publicKey);
 
   beforeEach(async () => {
     ({ context, provider, program } = await getBankrunSetup([
@@ -58,7 +54,7 @@ describe('registerForEvent', () => {
 
     await program.methods
       .createEvent({
-        public: true,
+        isPublic: true,
         approvalRequired: false,
         capacity: 100,
         startTimestamp: new BN(Number(unixTimestamp) + 1000 * 60 * 60),
@@ -74,6 +70,7 @@ describe('registerForEvent', () => {
         authority: walletA.publicKey,
         collection: collection.publicKey,
         user: userPda,
+        mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([walletA, collection])
       .rpc();
@@ -91,7 +88,7 @@ describe('registerForEvent', () => {
   });
 
   test('registers for event as attendee', async () => {
-    const [userPda] = getUserPdaAndBump(walletB.publicKey);
+    const userPda = getUserPda(walletB.publicKey);
 
     await program.methods
       .registerForEvent()
@@ -103,13 +100,9 @@ describe('registerForEvent', () => {
       .signers([walletB])
       .rpc();
 
-    const [attendeePda, attendeeBump] = getAttendeePdaAndBump(
-      userPda,
-      eventPda
-    );
+    const attendeePda = getAttendeePda(userPda, eventPda);
     const attendeeAcc = await fetchAttendeeAcc(program, attendeePda);
 
-    expect(attendeeAcc.bump).toBe(attendeeBump);
     expect(attendeeAcc.user).toStrictEqual(userPda);
     expect(attendeeAcc.event).toStrictEqual(eventPda);
     expect(attendeeAcc.status).toEqual({ pending: {} });
@@ -132,7 +125,7 @@ describe('registerForEvent', () => {
     );
     context.setClock(clock);
 
-    const [userPda] = getUserPdaAndBump(walletB.publicKey);
+    const userPda = getUserPda(walletB.publicKey);
 
     try {
       await program.methods

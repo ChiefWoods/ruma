@@ -19,3 +19,16 @@ export async function fetchAttendeeAcc(
 ) {
   return await program.account.attendee.fetchNullable(attendeePda);
 }
+
+export class EventStateFlag {
+  readonly IS_PUBLIC = 1 << 0;
+  readonly APPROVAL_REQUIRED = 1 << 1;
+
+  isPublic: boolean;
+  isApprovalRequired: boolean;
+
+  constructor(bitflag: number) {
+    this.isPublic = (bitflag & this.IS_PUBLIC) !== 0;
+    this.isApprovalRequired = (bitflag & this.APPROVAL_REQUIRED) !== 0;
+  }
+}
