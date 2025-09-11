@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use mpl_core::{
     instructions::CreateCollectionV2CpiBuilder,
-    types::{MasterEdition, Plugin, PluginAuthority, PluginAuthorityPair},
+    types::{MasterEdition, PermanentFreezeDelegate, Plugin, PluginAuthorityPair},
 };
 
 use crate::{
@@ -35,12 +35,17 @@ pub struct CreateEvent<'info> {
     #[account(has_one = authority)]
     pub user: Account<'info, User>,
     #[account(
-        init,
-        payer = authority,
-        space = Event::space(&args.event_name, &args.event_image, args.location.as_deref(), args.about.as_deref()),
-        seeds = [EVENT_SEED, user.key().as_ref(), collection.key().as_ref()],
-        bump,
-    )]
+    init,
+    payer = authority,
+    space = Event::space(
+      &args.event_name,
+      &args.event_image,
+      args.location.as_deref(),
+      args.about.as_deref()
+    ),
+    seeds = [EVENT_SEED, user.key().as_ref(), collection.key().as_ref()],
+    bump
+  )]
     pub event: Account<'info, Event>,
     pub system_program: Program<'info, System>,
     /// CHECK: MPL Core program
@@ -82,7 +87,7 @@ impl CreateEvent<'_> {
                 start_timestamp.unwrap() < end_timestamp.unwrap(),
                 RumaError::InvalidEventTime
             );
-        };
+        }
 
         let is_public = if is_public { 0000_0001 } else { 0000_0000 };
         let approval_required = if approval_required {
@@ -120,14 +125,22 @@ impl CreateEvent<'_> {
             .payer(&authority.to_account_info())
             .name(badge_name.clone())
             .uri(badge_uri.clone())
-            .plugins(vec![PluginAuthorityPair {
-                authority: Some(PluginAuthority::None),
-                plugin: Plugin::MasterEdition(MasterEdition {
-                    name: Some(badge_name.clone()),
-                    uri: Some(badge_uri.clone()),
-                    max_supply: capacity,
-                }),
-            }])
+            .plugins(vec![
+                PluginAuthorityPair {
+                    authority: None,
+                    plugin: Plugin::MasterEdition(MasterEdition {
+                        name: Some(badge_name.clone()),
+                        uri: Some(badge_uri.clone()),
+                        max_supply: capacity,
+                    }),
+                },
+                PluginAuthorityPair {
+                    authority: None,
+                    plugin: Plugin::PermanentFreezeDelegate(PermanentFreezeDelegate {
+                        frozen: true,
+                    }),
+                },
+            ])
             .system_program(&system_program.to_account_info())
             .invoke()?;
 
