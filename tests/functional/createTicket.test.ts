@@ -5,11 +5,11 @@ import { Clock, ProgramTestContext } from 'solana-bankrun';
 import { Ruma } from '../../target/types/ruma';
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
 import { getBankrunSetup } from '../setup';
-import { fetchAttendeeAcc } from '../accounts';
-import { getAttendeePda, getEventPda, getUserPda } from '../pda';
+import { fetchTicketAcc } from '../accounts';
+import { getTicketPda, getEventPda, getUserPda } from '../pda';
 import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
 
-describe('updateAttendee', () => {
+describe('createTicket', () => {
   let { context, provider, program } = {} as {
     context: ProgramTestContext;
     provider: BankrunProvider;
@@ -21,9 +21,8 @@ describe('updateAttendee', () => {
   );
 
   const collection = Keypair.generate();
-  const userAPda = getUserPda(walletA.publicKey);
-  const userBPda = getUserPda(walletB.publicKey);
-  const eventPda = getEventPda(userAPda, collection.publicKey);
+  const userPda = getUserPda(walletA.publicKey);
+  const eventPda = getEventPda(userPda, collection.publicKey);
 
   beforeEach(async () => {
     ({ context, provider, program } = await getBankrunSetup([
@@ -70,7 +69,7 @@ describe('updateAttendee', () => {
       .accountsPartial({
         authority: walletA.publicKey,
         collection: collection.publicKey,
-        user: userAPda,
+        user: userPda,
         mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([walletA, collection])
@@ -86,35 +85,30 @@ describe('updateAttendee', () => {
       })
       .signers([walletB])
       .rpc();
+  });
+
+  test('registers for event', async () => {
+    const userPda = getUserPda(walletB.publicKey);
 
     await program.methods
-      .registerForEvent()
+      .createTicket()
       .accountsPartial({
         authority: walletB.publicKey,
-        user: userBPda,
+        user: userPda,
         event: eventPda,
       })
       .signers([walletB])
       .rpc();
+
+    const ticketPda = getTicketPda(userPda, eventPda);
+    const ticketAcc = await fetchTicketAcc(program, ticketPda);
+
+    expect(ticketAcc.user).toStrictEqual(userPda);
+    expect(ticketAcc.event).toStrictEqual(eventPda);
+    expect(ticketAcc.status).toEqual({ pending: {} });
   });
 
-  test('update attendee status', async () => {
-    const attendeePda = getAttendeePda(userBPda, eventPda);
-
-    await program.methods
-      .updateAttendee({ approved: {} })
-      .accountsPartial({
-        authority: walletA.publicKey,
-        attendee: attendeePda,
-      })
-      .signers([walletA])
-      .rpc();
-
-    const attendeeAcc = await fetchAttendeeAcc(program, attendeePda);
-    expect(attendeeAcc.status.approved).toBeTruthy();
-  });
-
-  test('throws if updating attendee after event has ended', async () => {
+  test('throws if registering after event has ended', async () => {
     const {
       epoch,
       epochStartTimestamp,
@@ -131,16 +125,17 @@ describe('updateAttendee', () => {
     );
     context.setClock(clock);
 
-    const attendeePda = getAttendeePda(userBPda, eventPda);
+    const userPda = getUserPda(walletB.publicKey);
 
     try {
       await program.methods
-        .updateAttendee({ approved: {} })
+        .createTicket()
         .accountsPartial({
-          authority: walletA.publicKey,
-          attendee: attendeePda,
+          authority: walletB.publicKey,
+          user: userPda,
+          event: eventPda,
         })
-        .signers([walletA])
+        .signers([walletB])
         .rpc();
     } catch (err) {
       expect(err).toBeInstanceOf(AnchorError);

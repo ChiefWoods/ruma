@@ -6,7 +6,7 @@ use anchor_spl::metadata::mpl_token_metadata::{
 #[constant]
 pub const USER_SEED: &[u8] = b"user";
 pub const EVENT_SEED: &[u8] = b"event";
-pub const ATTENDEE_SEED: &[u8] = b"attendee";
+pub const TICKET_SEED: &[u8] = b"ticket";
 pub const MAX_USER_NAME_LENGTH: usize = 32;
 pub const MAX_USER_IMAGE_LENGTH: usize = 200;
 pub const MAX_EVENT_NAME_LENGTH: usize = 32;

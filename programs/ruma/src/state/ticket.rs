@@ -5,26 +5,22 @@ use crate::error::RumaError;
 
 #[account]
 #[derive(InitSpace)]
-pub struct Attendee {
+pub struct Ticket {
     /// Bump used to derive address
     pub bump: u8, // 1
-    /// Authority of the attendee
+    /// User that owns this ticket
     pub user: Pubkey, // 32
     /// Event registered
     pub event: Pubkey, // 32
-    /// Approval status of the attendee
-    pub status: AttendeeStatus, // 1 + 1
+    /// Approval status of the user for the event
+    pub status: TicketStatus, // 1 + 1
 }
 
-impl Attendee {
+impl Ticket {
     pub fn invariant(&self) -> Result<()> {
-        require_keys_neq!(self.user, Pubkey::default(), RumaError::InvalidAttendeeUser);
+        require_keys_neq!(self.user, Pubkey::default(), RumaError::InvalidTicketUser);
 
-        require_keys_neq!(
-            self.event,
-            Pubkey::default(),
-            RumaError::InvalidAttendeeEvent
-        );
+        require_keys_neq!(self.event, Pubkey::default(), RumaError::InvalidTicketEvent);
 
         Ok(())
     }
@@ -42,7 +38,7 @@ impl Attendee {
     Default,
     InitSpace,
 )]
-pub enum AttendeeStatus {
+pub enum TicketStatus {
     #[default]
     Pending,
     Approved,

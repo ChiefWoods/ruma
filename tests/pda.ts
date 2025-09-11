@@ -17,9 +17,9 @@ export function getEventPda(userPda: PublicKey, collectionPda: PublicKey) {
   )[0];
 }
 
-export function getAttendeePda(userPda: PublicKey, eventPda: PublicKey) {
+export function getTicketPda(userPda: PublicKey, eventPda: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('attendee'), userPda.toBuffer(), eventPda.toBuffer()],
+    [Buffer.from('ticket'), userPda.toBuffer(), eventPda.toBuffer()],
     RUMA_PROGRAM_ID
   )[0];
 }

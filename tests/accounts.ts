@@ -13,11 +13,11 @@ export async function fetchEventAcc(
   return await program.account.event.fetchNullable(eventPda);
 }
 
-export async function fetchAttendeeAcc(
+export async function fetchTicketAcc(
   program: Program<Ruma>,
-  attendeePda: PublicKey
+  ticketPda: PublicKey
 ) {
-  return await program.account.attendee.fetchNullable(attendeePda);
+  return await program.account.ticket.fetchNullable(ticketPda);
 }
 
 export class EventStateFlag {

@@ -20,15 +20,15 @@ pub mod ruma {
         CreateEvent::handler(ctx, args)
     }
 
-    pub fn register_for_event(ctx: Context<RegisterForEvent>) -> Result<()> {
-        RegisterForEvent::handler(ctx)
+    pub fn create_ticket(ctx: Context<CreateTicket>) -> Result<()> {
+        CreateTicket::handler(ctx)
     }
 
-    pub fn update_attendee(ctx: Context<UpdateAttendee>, status: AttendeeStatus) -> Result<()> {
-        UpdateAttendee::handler(ctx, status)
+    pub fn update_ticket(ctx: Context<UpdateTicket>, status: TicketStatus) -> Result<()> {
+        UpdateTicket::handler(ctx, status)
     }
 
-    pub fn check_into_event(ctx: Context<CheckIntoEvent>) -> Result<()> {
-        CheckIntoEvent::handler(ctx)
+    pub fn check_in(ctx: Context<CheckIn>) -> Result<()> {
+        CheckIn::handler(ctx)
     }
 }

@@ -1,11 +1,11 @@
-pub mod check_into_event;
+pub mod check_in;
 pub mod create_event;
+pub mod create_ticket;
 pub mod create_user;
-pub mod register_for_event;
-pub mod update_attendee;
+pub mod update_ticket;
 
-pub use check_into_event::*;
+pub use check_in::*;
 pub use create_event::*;
+pub use create_ticket::*;
 pub use create_user::*;
-pub use register_for_event::*;
-pub use update_attendee::*;
+pub use update_ticket::*;

@@ -20,10 +20,10 @@ pub enum RumaError {
     InvalidEventTime,
     #[msg("Event has already ended")]
     EventHasEnded,
-    #[msg("Attendee user cannot be default pubkey")]
-    InvalidAttendeeUser,
-    #[msg("Attendee event cannot be default pubkey")]
-    InvalidAttendeeEvent,
+    #[msg("Ticket user cannot be default pubkey")]
+    InvalidTicketUser,
+    #[msg("Ticket event cannot be default pubkey")]
+    InvalidTicketEvent,
     #[msg("Attendee not approved by organizer")]
     AttendeeNotApproved,
     #[msg("Attendee already checked in")]

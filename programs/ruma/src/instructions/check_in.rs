@@ -8,11 +8,11 @@ use mpl_core::{
 use crate::{
     constants::USER_SEED,
     error::RumaError,
-    state::{Attendee, AttendeeStatus, Event, User},
+    state::{Event, Ticket, TicketStatus, User},
 };
 
 #[derive(Accounts)]
-pub struct CheckIntoEvent<'info> {
+pub struct CheckIn<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     #[account(mut)]
@@ -33,10 +33,10 @@ pub struct CheckIntoEvent<'info> {
         mut,
         has_one = user,
         has_one = event,
-        constraint = attendee.status != AttendeeStatus::CheckedIn @ RumaError::AttendeeAlreadyCheckedIn,
-        constraint = attendee.status == AttendeeStatus::Approved @ RumaError::AttendeeNotApproved,
+        constraint = ticket.status != TicketStatus::CheckedIn @ RumaError::AttendeeAlreadyCheckedIn,
+        constraint = ticket.status == TicketStatus::Approved @ RumaError::AttendeeNotApproved,
     )]
-    pub attendee: Account<'info, Attendee>,
+    pub ticket: Account<'info, Ticket>,
     #[account(mut)]
     pub badge: Account<'info, BaseCollectionV1>,
     pub system_program: Program<'info, System>,
@@ -44,10 +44,10 @@ pub struct CheckIntoEvent<'info> {
     pub mpl_core_program: UncheckedAccount<'info>,
 }
 
-impl CheckIntoEvent<'_> {
-    pub fn handler(ctx: Context<CheckIntoEvent>) -> Result<()> {
-        let CheckIntoEvent {
-            attendee,
+impl CheckIn<'_> {
+    pub fn handler(ctx: Context<CheckIn>) -> Result<()> {
+        let CheckIn {
+            ticket,
             asset,
             authority,
             badge,
@@ -60,7 +60,7 @@ impl CheckIntoEvent<'_> {
 
         event.invalidate()?;
 
-        attendee.status = AttendeeStatus::CheckedIn;
+        ticket.status = TicketStatus::CheckedIn;
 
         CreateV2CpiBuilder::new(&mpl_core_program.to_account_info())
             .asset(&asset.to_account_info())
