@@ -1,7 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
-import idl from '../target/idl/ruma.json';
-
-const RUMA_PROGRAM_ID = new PublicKey(idl.address);
+import { RUMA_PROGRAM_ID } from './constants';
 
 export function getUserPda(authority: PublicKey) {
   return PublicKey.findProgramAddressSync(

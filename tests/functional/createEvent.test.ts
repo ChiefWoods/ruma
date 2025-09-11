@@ -1,34 +1,35 @@
-import { AnchorError, BN, Program } from '@coral-xyz/anchor';
-import { BankrunProvider } from 'anchor-bankrun';
+import { BN, Program } from '@coral-xyz/anchor';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { ProgramTestContext } from 'solana-bankrun';
 import { Ruma } from '../../target/types/ruma';
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
-import { getBankrunSetup } from '../setup';
+import { Keypair, PublicKey } from '@solana/web3.js';
+import { expectAnchorError, getSetup } from '../setup';
 import { EventStateFlag, fetchEventAcc } from '../accounts';
 import { getEventPda, getUserPda } from '../pda';
 import { MAX_EVENT_IMAGE_LENGTH, MAX_EVENT_NAME_LENGTH } from '../constants';
-import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
+import {
+  fetchCollection,
+  MPL_CORE_PROGRAM_ID,
+} from '@metaplex-foundation/mpl-core';
+import { publicKey, Umi } from '@metaplex-foundation/umi';
 
 describe('createEvent', () => {
-  let { context, provider, program } = {} as {
-    context: ProgramTestContext;
-    provider: BankrunProvider;
+  let { program, umi } = {} as {
     program: Program<Ruma>;
+    umi: Umi;
   };
 
-  const wallet = Keypair.generate();
+  let wallet: Keypair;
+  let collection: Keypair;
+  let organizerUserPda: PublicKey;
 
   beforeEach(async () => {
-    ({ context, provider, program } = await getBankrunSetup([
+    wallet = Keypair.generate();
+    collection = Keypair.generate();
+    organizerUserPda = getUserPda(wallet.publicKey);
+
+    ({ program, umi } = await getSetup([
       {
-        address: wallet.publicKey,
-        info: {
-          data: new Uint8Array(Buffer.alloc(0)),
-          executable: false,
-          owner: SystemProgram.programId,
-          lamports: LAMPORTS_PER_SOL,
-        },
+        publicKey: wallet.publicKey,
       },
     ]));
 
@@ -48,17 +49,15 @@ describe('createEvent', () => {
     const isPublic = true;
     const approvalRequired = false;
     const capacity = 100;
-    const { unixTimestamp } = await context.banksClient.getClock();
-    const startTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60);
-    const endTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60 * 2);
+    const unixTimestamp = Math.floor(Date.now() / 1000);
+    const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
+    const endTimestamp = new BN(Number(unixTimestamp) + 60 * 60 * 2);
     const eventName = 'Event';
     const eventImage = 'https://example.com/image.png';
     const badgeName = 'Badge';
     const badgeUri = 'https://example.com/badge.json';
     const location = 'Location';
     const about = 'About';
-    const collection = Keypair.generate();
-    const userPda = getUserPda(wallet.publicKey);
 
     await program.methods
       .createEvent({
@@ -77,16 +76,16 @@ describe('createEvent', () => {
       .accountsPartial({
         authority: wallet.publicKey,
         collection: collection.publicKey,
-        user: userPda,
+        user: organizerUserPda,
         mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([wallet, collection])
       .rpc();
 
-    const eventPda = getEventPda(userPda, collection.publicKey);
+    const eventPda = getEventPda(organizerUserPda, collection.publicKey);
     const eventAcc = await fetchEventAcc(program, eventPda);
 
-    expect(eventAcc.organizer).toStrictEqual(userPda);
+    expect(eventAcc.organizer).toStrictEqual(organizerUserPda);
     expect(eventAcc.capacity).toBe(capacity);
     expect(eventAcc.startTimestamp.toNumber()).toBe(startTimestamp.toNumber());
     expect(eventAcc.endTimestamp.toNumber()).toBe(endTimestamp.toNumber());
@@ -101,26 +100,31 @@ describe('createEvent', () => {
     expect(stateFlags.isPublic).toBe(isPublic);
     expect(stateFlags.isApprovalRequired).toBe(approvalRequired);
 
-    const collectionAcc = await context.banksClient.getAccount(eventAcc.badge);
+    const collectionAcc = await fetchCollection(umi, publicKey(eventAcc.badge));
 
-    expect(collectionAcc).not.toBeNull();
+    expect(collectionAcc.name).toBe(badgeName);
+    expect(collectionAcc.uri).toBe(badgeUri);
+    expect(collectionAcc.masterEdition.maxSupply).toBe(capacity);
+    expect(collectionAcc.masterEdition.authority.address).toBeUndefined();
+    expect(collectionAcc.permanentFreezeDelegate.frozen).toBe(true);
+    expect(
+      collectionAcc.permanentFreezeDelegate.authority.address
+    ).toBeUndefined();
   });
 
   test('throws if event name is too long', async () => {
     const isPublic = true;
     const approvalRequired = false;
     const capacity = 100;
-    const { unixTimestamp } = await context.banksClient.getClock();
-    const startTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60);
-    const endTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60 * 2);
+    const unixTimestamp = Math.floor(Date.now() / 1000);
+    const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
+    const endTimestamp = new BN(Number(unixTimestamp) + 60 * 60 * 2);
     const eventName = '_'.repeat(MAX_EVENT_NAME_LENGTH);
     const eventImage = 'https://example.com/image.png';
     const badgeName = 'Badge';
     const badgeUri = 'https://example.com/badge.json';
     const location = 'Location';
     const about = 'About';
-    const collection = Keypair.generate();
-    const userPda = getUserPda(wallet.publicKey);
 
     try {
       await program.methods
@@ -140,16 +144,13 @@ describe('createEvent', () => {
         .accountsPartial({
           authority: wallet.publicKey,
           collection: collection.publicKey,
-          user: userPda,
+          user: organizerUserPda,
           mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([wallet, collection])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('EventNameTooLong');
+      expectAnchorError(err, 'EventNameTooLong');
     }
   });
 
@@ -157,17 +158,15 @@ describe('createEvent', () => {
     const isPublic = true;
     const approvalRequired = false;
     const capacity = 100;
-    const { unixTimestamp } = await context.banksClient.getClock();
-    const startTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60);
-    const endTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60 * 2);
+    const unixTimestamp = Math.floor(Date.now() / 1000);
+    const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
+    const endTimestamp = new BN(Number(unixTimestamp) + 60 * 60 * 2);
     const eventName = 'Event';
     const eventImage = '_'.repeat(MAX_EVENT_IMAGE_LENGTH);
     const badgeName = 'Badge';
     const badgeUri = 'https://example.com/badge.json';
     const location = 'Location';
     const about = 'About';
-    const collection = Keypair.generate();
-    const userPda = getUserPda(wallet.publicKey);
 
     try {
       await program.methods
@@ -187,16 +186,13 @@ describe('createEvent', () => {
         .accountsPartial({
           authority: wallet.publicKey,
           collection: collection.publicKey,
-          user: userPda,
+          user: organizerUserPda,
           mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([wallet, collection])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('EventImageTooLong');
+      expectAnchorError(err, 'EventImageTooLong');
     }
   });
 
@@ -204,17 +200,15 @@ describe('createEvent', () => {
     const isPublic = true;
     const approvalRequired = false;
     const capacity = 100;
-    const { unixTimestamp } = await context.banksClient.getClock();
-    const startTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60 * 2);
-    const endTimestamp = new BN(Number(unixTimestamp) + 1000 * 60 * 60);
+    const unixTimestamp = Math.floor(Date.now() / 1000);
+    const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
+    const endTimestamp = new BN(Number(unixTimestamp) + 60 * 60 * 2);
     const eventName = '_'.repeat(MAX_EVENT_NAME_LENGTH);
     const eventImage = 'https://example.com/image.png';
     const badgeName = 'Badge';
     const badgeUri = 'https://example.com/badge.json';
     const location = 'Location';
     const about = 'About';
-    const collection = Keypair.generate();
-    const userPda = getUserPda(wallet.publicKey);
 
     try {
       await program.methods
@@ -234,16 +228,13 @@ describe('createEvent', () => {
         .accountsPartial({
           authority: wallet.publicKey,
           collection: collection.publicKey,
-          user: userPda,
+          user: organizerUserPda,
           mplCoreProgram: MPL_CORE_PROGRAM_ID,
         })
         .signers([wallet, collection])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('InvalidEventTime');
+      expectAnchorError(err, 'InvalidEventTime');
     }
   });
 });

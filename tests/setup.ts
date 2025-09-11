@@ -1,29 +1,48 @@
-import { AddedAccount, startAnchor } from 'solana-bankrun';
-import { BankrunProvider } from 'anchor-bankrun';
-import { Program } from '@coral-xyz/anchor';
+import {
+  AnchorError,
+  AnchorProvider,
+  Program,
+  Wallet,
+} from '@coral-xyz/anchor';
 import { Ruma } from '../target/types/ruma';
 import idl from '../target/idl/ruma.json';
-import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
-import { PublicKey } from '@solana/web3.js';
+import { mplCore } from '@metaplex-foundation/mpl-core';
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { DEFAULT_PAYER, SURFPOOL_RPC_URL } from './constants';
+import { Surfpool } from './surfpool';
+import { expect } from 'bun:test';
 
-export async function getBankrunSetup(accounts: AddedAccount[] = []) {
-  const context = await startAnchor(
-    '',
-    [
-      {
-        name: 'mpl_core',
-        programId: new PublicKey(MPL_CORE_PROGRAM_ID),
-      },
-    ],
-    accounts
-  );
+const connection = new Connection(SURFPOOL_RPC_URL, 'processed');
+const provider = new AnchorProvider(connection, new Wallet(DEFAULT_PAYER));
+const program = new Program<Ruma>(idl, provider);
+const umi = createUmi(connection.rpcEndpoint, 'processed').use(mplCore());
 
-  const provider = new BankrunProvider(context);
-  const program = new Program<Ruma>(idl, provider);
+export async function getSetup(
+  accounts: {
+    publicKey: PublicKey;
+    lamports?: number;
+  }[]
+) {
+  for (const { publicKey, lamports } of accounts) {
+    await Surfpool.setAccount({
+      publicKey: publicKey.toBase58(),
+      lamports: lamports ?? LAMPORTS_PER_SOL,
+    });
+  }
 
-  return {
-    context,
-    provider,
-    program,
-  };
+  return { program, umi };
+}
+
+export async function expectAnchorError(error: Error, code: string) {
+  expect(error).toBeInstanceOf(AnchorError);
+  const { errorCode } = (error as AnchorError).error;
+  expect(errorCode.code).toBe(code);
+}
+
+export async function expireBlockhash(slot: number) {
+  while (true) {
+    const newSlot = await program.provider.connection.getSlot('processed');
+    if (newSlot > slot) break;
+  }
 }

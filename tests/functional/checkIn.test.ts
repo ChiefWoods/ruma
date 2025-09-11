@@ -1,45 +1,49 @@
-import { AnchorError, BN, Program } from '@coral-xyz/anchor';
-import { BankrunProvider } from 'anchor-bankrun';
+import { BN, Program } from '@coral-xyz/anchor';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { Clock, ProgramTestContext } from 'solana-bankrun';
 import { Ruma } from '../../target/types/ruma';
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
-import { getBankrunSetup } from '../setup';
+import { Keypair, PublicKey } from '@solana/web3.js';
+import { expectAnchorError, expireBlockhash, getSetup } from '../setup';
 import { fetchTicketAcc } from '../accounts';
 import { getTicketPda, getEventPda, getUserPda } from '../pda';
-import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
+import {
+  fetchAsset,
+  fetchCollection,
+  MPL_CORE_PROGRAM_ID,
+} from '@metaplex-foundation/mpl-core';
+import { publicKey, Umi } from '@metaplex-foundation/umi';
+import { Surfpool, TimeTravelConfig } from '../surfpool';
 
 describe('checkIn', () => {
-  let { context, provider, program } = {} as {
-    context: ProgramTestContext;
-    provider: BankrunProvider;
+  let { program, umi } = {} as {
     program: Program<Ruma>;
+    umi: Umi;
   };
 
-  const [walletA, walletB] = Array.from({ length: 2 }, () =>
-    Keypair.generate()
-  );
-
-  const collection = Keypair.generate();
-  const userAPda = getUserPda(walletA.publicKey);
-  const userBPda = getUserPda(walletB.publicKey);
-  const eventPda = getEventPda(userAPda, collection.publicKey);
-  const ticketPda = getTicketPda(userBPda, eventPda);
+  let walletA: Keypair;
+  let walletB: Keypair;
+  let collection: Keypair;
+  let organizerUserPda: PublicKey;
+  let attendeeUserPda: PublicKey;
+  let eventPda: PublicKey;
+  let ticketPda: PublicKey;
+  let asset: Keypair;
 
   beforeEach(async () => {
-    ({ context, provider, program } = await getBankrunSetup([
-      ...[walletA, walletB].map((kp) => {
+    [walletA, walletB] = Array.from({ length: 2 }, () => Keypair.generate());
+    collection = Keypair.generate();
+    organizerUserPda = getUserPda(walletA.publicKey);
+    attendeeUserPda = getUserPda(walletB.publicKey);
+    eventPda = getEventPda(organizerUserPda, collection.publicKey);
+    ticketPda = getTicketPda(attendeeUserPda, eventPda);
+    asset = Keypair.generate();
+
+    ({ program, umi } = await getSetup(
+      [walletA, walletB].map((wallet) => {
         return {
-          address: kp.publicKey,
-          info: {
-            data: new Uint8Array(Buffer.alloc(0)),
-            executable: false,
-            owner: SystemProgram.programId,
-            lamports: LAMPORTS_PER_SOL,
-          },
+          publicKey: wallet.publicKey,
         };
-      }),
-    ]));
+      })
+    ));
 
     await program.methods
       .createUser({
@@ -52,7 +56,7 @@ describe('checkIn', () => {
       .signers([walletA])
       .rpc();
 
-    const { unixTimestamp } = await context.banksClient.getClock();
+    const unixTimestamp = Math.floor(Date.now() / 1000);
 
     await program.methods
       .createEvent({
@@ -71,7 +75,7 @@ describe('checkIn', () => {
       .accountsPartial({
         authority: walletA.publicKey,
         collection: collection.publicKey,
-        user: userAPda,
+        user: organizerUserPda,
         mplCoreProgram: MPL_CORE_PROGRAM_ID,
       })
       .signers([walletA, collection])
@@ -92,7 +96,7 @@ describe('checkIn', () => {
       .createTicket()
       .accountsPartial({
         authority: walletB.publicKey,
-        user: userBPda,
+        user: attendeeUserPda,
         event: eventPda,
       })
       .signers([walletB])
@@ -109,8 +113,6 @@ describe('checkIn', () => {
       .signers([walletA])
       .rpc();
 
-    const asset = Keypair.generate();
-
     await program.methods
       .checkIn()
       .accountsPartial({
@@ -126,9 +128,15 @@ describe('checkIn', () => {
 
     expect(ticketAcc.status.checkedIn).toBeTruthy();
 
-    const assetAcc = await context.banksClient.getAccount(asset.publicKey);
+    const collectionAcc = await fetchCollection(
+      umi,
+      publicKey(collection.publicKey)
+    );
+    const assetAcc = await fetchAsset(umi, publicKey(asset.publicKey));
 
-    expect(assetAcc).not.toBeNull();
+    expect(assetAcc.name).toBe(collectionAcc.name);
+    expect(assetAcc.uri).toBe(collectionAcc.uri);
+    expect(assetAcc.edition.number).toBe(collectionAcc.numMinted);
   });
 
   test('throws if user is not approved', async () => {
@@ -140,8 +148,6 @@ describe('checkIn', () => {
       })
       .signers([walletA])
       .rpc();
-
-    const asset = Keypair.generate();
 
     try {
       await program.methods
@@ -155,10 +161,7 @@ describe('checkIn', () => {
         .signers([walletA, asset])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('AttendeeNotApproved');
+      expectAnchorError(err, 'AttendeeNotApproved');
     }
   });
 
@@ -172,7 +175,7 @@ describe('checkIn', () => {
       .signers([walletA])
       .rpc();
 
-    const asset = Keypair.generate();
+    const oldSlot = await program.provider.connection.getSlot('processed');
 
     await program.methods
       .checkIn()
@@ -184,6 +187,8 @@ describe('checkIn', () => {
       })
       .signers([walletA, asset])
       .rpc();
+
+    await expireBlockhash(oldSlot);
 
     try {
       await program.methods
@@ -197,10 +202,7 @@ describe('checkIn', () => {
         .signers([walletA, asset])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('AttendeeAlreadyCheckedIn');
+      expectAnchorError(err, 'AttendeeAlreadyCheckedIn');
     }
   });
 
@@ -214,23 +216,10 @@ describe('checkIn', () => {
       .signers([walletA])
       .rpc();
 
-    const {
-      epoch,
-      epochStartTimestamp,
-      leaderScheduleEpoch,
-      slot,
-      unixTimestamp,
-    } = await context.banksClient.getClock();
-    const clock = new Clock(
-      slot,
-      epochStartTimestamp,
-      epoch,
-      leaderScheduleEpoch,
-      unixTimestamp + BigInt(1000 * 60 * 60 * 3)
-    );
-    context.setClock(clock);
-
-    const asset = Keypair.generate();
+    await Surfpool.timeTravel({
+      config: TimeTravelConfig.Timestamp,
+      value: Math.floor(Date.now() / 1000) + 60 * 60 * 3,
+    });
 
     try {
       await program.methods
@@ -244,10 +233,7 @@ describe('checkIn', () => {
         .signers([walletA, asset])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('EventHasEnded');
+      expectAnchorError(err, 'EventHasEnded');
     }
   });
 });

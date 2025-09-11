@@ -1,33 +1,27 @@
-import { AnchorError, Program } from '@coral-xyz/anchor';
-import { BankrunProvider } from 'anchor-bankrun';
+import { Program } from '@coral-xyz/anchor';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { ProgramTestContext } from 'solana-bankrun';
 import { Ruma } from '../../target/types/ruma';
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js';
-import { getBankrunSetup } from '../setup';
+import { Keypair } from '@solana/web3.js';
+import { expectAnchorError, getSetup } from '../setup';
 import { fetchUserAcc } from '../accounts';
 import { getUserPda } from '../pda';
 import { MAX_USER_IMAGE_LENGTH, MAX_USER_NAME_LENGTH } from '../constants';
+import { Umi } from '@metaplex-foundation/umi';
 
 describe('createUser', () => {
-  let { context, provider, program } = {} as {
-    context: ProgramTestContext;
-    provider: BankrunProvider;
+  let { program, umi } = {} as {
     program: Program<Ruma>;
+    umi: Umi;
   };
 
-  const wallet = Keypair.generate();
+  let wallet: Keypair;
 
   beforeEach(async () => {
-    ({ context, provider, program } = await getBankrunSetup([
+    wallet = Keypair.generate();
+
+    ({ program, umi } = await getSetup([
       {
-        address: wallet.publicKey,
-        info: {
-          data: new Uint8Array(Buffer.alloc(0)),
-          executable: false,
-          owner: SystemProgram.programId,
-          lamports: LAMPORTS_PER_SOL,
-        },
+        publicKey: wallet.publicKey,
       },
     ]));
   });
@@ -71,10 +65,7 @@ describe('createUser', () => {
         .signers([wallet])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('UserNameTooLong');
+      expectAnchorError(err, 'UserNameTooLong');
     }
   });
 
@@ -94,10 +85,7 @@ describe('createUser', () => {
         .signers([wallet])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { errorCode } = (err as AnchorError).error;
-      expect(errorCode.code).toBe('UserImageTooLong');
+      expectAnchorError(err, 'UserImageTooLong');
     }
   });
 });
