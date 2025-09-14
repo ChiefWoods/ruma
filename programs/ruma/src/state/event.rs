@@ -13,9 +13,9 @@ pub struct Event {
     /// Max amount of attendees
     pub capacity: Option<u32>, // 1 + 4
     /// Starting time of the event
-    pub start_timestamp: Option<i64>, // 1 + 8
+    pub start_timestamp: i64, // 8
     /// Ending time of the event
-    pub end_timestamp: Option<i64>, // 1 + 8
+    pub end_timestamp: i64, // 8
     /// NFT awarded to checked-in attendees
     pub badge: Pubkey, // 32
     /// Name of the event
@@ -57,18 +57,8 @@ impl Event {
         }
     }
 
-    pub const MIN_SPACE: usize = Event::DISCRIMINATOR.len()
-        + 1
-        + 32
-        + 1
-        + (1 + 4)
-        + (1 + 8)
-        + (1 + 8)
-        + 32
-        + 4
-        + 4
-        + (1 + 4)
-        + (1 + 4);
+    pub const MIN_SPACE: usize =
+        Event::DISCRIMINATOR.len() + 1 + 32 + 1 + (1 + 4) + 8 + 8 + 32 + 4 + 4 + (1 + 4) + (1 + 4);
 
     pub fn space(name: &str, image: &str, location: Option<&str>, about: Option<&str>) -> usize {
         Self::MIN_SPACE
@@ -80,7 +70,7 @@ impl Event {
 
     pub fn invalidate(&self) -> Result<()> {
         require!(
-            self.end_timestamp.unwrap() > Clock::get()?.unix_timestamp,
+            self.end_timestamp > Clock::get()?.unix_timestamp,
             RumaError::EventHasEnded
         );
 

@@ -16,7 +16,7 @@ pub struct CreateEventArgs {
     pub approval_required: bool,
     pub capacity: Option<u32>,
     pub start_timestamp: Option<i64>,
-    pub end_timestamp: Option<i64>,
+    pub end_timestamp: i64,
     pub event_name: String,
     pub event_image: String,
     pub badge_name: String,
@@ -78,16 +78,11 @@ impl CreateEvent<'_> {
         );
 
         let start_timestamp = match start_timestamp {
-            Some(timestamp) => Some(timestamp),
-            None => Some(Clock::get()?.unix_timestamp),
+            Some(timestamp) => timestamp,
+            None => Clock::get()?.unix_timestamp,
         };
 
-        if end_timestamp.is_some() {
-            require!(
-                start_timestamp.unwrap() < end_timestamp.unwrap(),
-                RumaError::InvalidEventTime
-            );
-        }
+        require!(start_timestamp < end_timestamp, RumaError::InvalidEventTime);
 
         let is_public = if is_public { 0000_0001 } else { 0000_0000 };
         let approval_required = if approval_required {
