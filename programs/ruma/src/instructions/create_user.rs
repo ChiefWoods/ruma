@@ -33,11 +33,11 @@ impl CreateUser<'_> {
         let CreateUserArgs { name, image } = args;
 
         require!(
-            name.len() <= MAX_USER_NAME_LENGTH,
+            name.len() <= MAX_USER_NAME_LENGTH as usize,
             RumaError::UserNameTooLong
         );
         require!(
-            image.len() <= MAX_USER_IMAGE_LENGTH,
+            image.len() <= MAX_USER_IMAGE_LENGTH as usize,
             RumaError::UserImageTooLong
         );
 

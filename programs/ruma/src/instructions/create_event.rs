@@ -69,11 +69,11 @@ impl CreateEvent<'_> {
         } = args;
 
         require!(
-            event_name.len() <= MAX_EVENT_IMAGE_LENGTH,
+            event_name.len() <= MAX_EVENT_IMAGE_LENGTH as usize,
             RumaError::EventNameTooLong
         );
         require!(
-            event_image.len() <= MAX_EVENT_IMAGE_LENGTH,
+            event_image.len() <= MAX_EVENT_IMAGE_LENGTH as usize,
             RumaError::EventImageTooLong
         );
 
