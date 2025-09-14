@@ -5,7 +5,7 @@ use mpl_core::{
 };
 
 use crate::{
-    constants::{EVENT_SEED, MAX_EVENT_IMAGE_LENGTH},
+    constants::EVENT_SEED,
     error::RumaError,
     state::{Event, User},
 };
@@ -67,15 +67,6 @@ impl CreateEvent<'_> {
             is_public,
             start_timestamp,
         } = args;
-
-        require!(
-            event_name.len() <= MAX_EVENT_IMAGE_LENGTH as usize,
-            RumaError::EventNameTooLong
-        );
-        require!(
-            event_image.len() <= MAX_EVENT_IMAGE_LENGTH as usize,
-            RumaError::EventImageTooLong
-        );
 
         let start_timestamp = match start_timestamp {
             Some(timestamp) => timestamp,

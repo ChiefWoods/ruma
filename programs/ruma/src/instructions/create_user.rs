@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::{MAX_USER_IMAGE_LENGTH, MAX_USER_NAME_LENGTH, USER_SEED},
+    constants::{MAX_USER_NAME_LENGTH, USER_SEED},
     error::RumaError,
     state::User,
 };
@@ -35,10 +35,6 @@ impl CreateUser<'_> {
         require!(
             name.len() <= MAX_USER_NAME_LENGTH as usize,
             RumaError::UserNameTooLong
-        );
-        require!(
-            image.len() <= MAX_USER_IMAGE_LENGTH as usize,
-            RumaError::UserImageTooLong
         );
 
         let CreateUser {

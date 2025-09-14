@@ -5,7 +5,7 @@ import { Keypair } from '@solana/web3.js';
 import { expectAnchorError, getSetup } from '../setup';
 import { fetchUserAcc } from '../accounts';
 import { getUserPda } from '../pda';
-import { MAX_USER_IMAGE_LENGTH, MAX_USER_NAME_LENGTH } from '../constants';
+import { MAX_USER_NAME_LENGTH } from '../constants';
 import { Umi } from '@metaplex-foundation/umi';
 
 describe('createUser', () => {
@@ -66,26 +66,6 @@ describe('createUser', () => {
         .rpc();
     } catch (err) {
       expectAnchorError(err, 'UserNameTooLong');
-    }
-  });
-
-  test('throws if image is too long', async () => {
-    const name = 'User';
-    const image = '_'.repeat(MAX_USER_IMAGE_LENGTH);
-
-    try {
-      await program.methods
-        .createUser({
-          name,
-          image,
-        })
-        .accounts({
-          authority: wallet.publicKey,
-        })
-        .signers([wallet])
-        .rpc();
-    } catch (err) {
-      expectAnchorError(err, 'UserImageTooLong');
     }
   });
 });

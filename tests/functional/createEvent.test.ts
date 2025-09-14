@@ -5,7 +5,6 @@ import { Keypair, PublicKey } from '@solana/web3.js';
 import { expectAnchorError, getSetup } from '../setup';
 import { EventStateFlag, fetchEventAcc } from '../accounts';
 import { getEventPda, getUserPda } from '../pda';
-import { MAX_EVENT_IMAGE_LENGTH, MAX_EVENT_NAME_LENGTH } from '../constants';
 import {
   fetchCollection,
   MPL_CORE_PROGRAM_ID,
@@ -112,14 +111,14 @@ describe('createEvent', () => {
     ).toBeUndefined();
   });
 
-  test('throws if event name is too long', async () => {
+  test('throws if start time is after end time', async () => {
     const isPublic = true;
     const approvalRequired = false;
     const capacity = 100;
     const unixTimestamp = Math.floor(Date.now() / 1000);
     const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
     const endTimestamp = new BN(Number(unixTimestamp) + 60 * 60 * 2);
-    const eventName = '_'.repeat(MAX_EVENT_NAME_LENGTH);
+    const eventName = 'Event';
     const eventImage = 'https://example.com/image.png';
     const badgeName = 'Badge';
     const badgeUri = 'https://example.com/badge.json';
@@ -130,90 +129,6 @@ describe('createEvent', () => {
       await program.methods
         .createEvent({
           isPublic,
-          approvalRequired,
-          capacity,
-          startTimestamp,
-          endTimestamp,
-          eventName,
-          eventImage,
-          badgeName,
-          badgeUri,
-          location,
-          about,
-        })
-        .accountsPartial({
-          authority: wallet.publicKey,
-          collection: collection.publicKey,
-          user: organizerUserPda,
-          mplCoreProgram: MPL_CORE_PROGRAM_ID,
-        })
-        .signers([wallet, collection])
-        .rpc();
-    } catch (err) {
-      expectAnchorError(err, 'EventNameTooLong');
-    }
-  });
-
-  test('throws if event image is too long', async () => {
-    const isPublic = true;
-    const approvalRequired = false;
-    const capacity = 100;
-    const unixTimestamp = Math.floor(Date.now() / 1000);
-    const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
-    const endTimestamp = new BN(Number(unixTimestamp) + 60 * 60 * 2);
-    const eventName = 'Event';
-    const eventImage = '_'.repeat(MAX_EVENT_IMAGE_LENGTH);
-    const badgeName = 'Badge';
-    const badgeUri = 'https://example.com/badge.json';
-    const location = 'Location';
-    const about = 'About';
-
-    try {
-      await program.methods
-        .createEvent({
-          public: isPublic,
-          approvalRequired,
-          capacity,
-          startTimestamp,
-          endTimestamp,
-          eventName,
-          eventImage,
-          badgeName,
-          badgeUri,
-          location,
-          about,
-        })
-        .accountsPartial({
-          authority: wallet.publicKey,
-          collection: collection.publicKey,
-          user: organizerUserPda,
-          mplCoreProgram: MPL_CORE_PROGRAM_ID,
-        })
-        .signers([wallet, collection])
-        .rpc();
-    } catch (err) {
-      expectAnchorError(err, 'EventImageTooLong');
-    }
-  });
-
-  test('throws if start time is after end time', async () => {
-    const isPublic = true;
-    const approvalRequired = false;
-    const capacity = 100;
-    const unixTimestamp = Math.floor(Date.now() / 1000);
-    const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
-    const endTimestamp = new BN(Number(unixTimestamp) + 60 * 60 * 2);
-    const eventName = '_'.repeat(MAX_EVENT_NAME_LENGTH);
-    const eventImage = 'https://example.com/image.png';
-    const badgeName = 'Badge';
-    const badgeUri = 'https://example.com/badge.json';
-    const location = 'Location';
-    const about = 'About';
-
-    try {
-      await program.methods
-        .createEvent({
-          public: isPublic,
           approvalRequired,
           capacity,
           startTimestamp,
