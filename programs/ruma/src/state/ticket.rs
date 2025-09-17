@@ -13,7 +13,7 @@ pub struct Ticket {
     /// Event registered
     pub event: Pubkey, // 32
     /// Approval status of the user for the event
-    pub status: TicketStatus, // 1 + 1
+    pub status: TicketStatus, // 1
 }
 
 impl Ticket {
