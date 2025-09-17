@@ -30,31 +30,19 @@ pub struct Event {
 
 impl Event {
     // State flags
-    const IS_PUBLIC_FLAG: u8 = 1 << 0;
-    const APPROVAL_REQUIRED_FLAG: u8 = 1 << 1;
+    pub const IS_PUBLIC_FLAG: u8 = 1 << 0;
+    pub const APPROVAL_REQUIRED_FLAG: u8 = 1 << 1;
 
-    pub fn is_public(&self) -> bool {
-        (self.state_flags & Self::IS_PUBLIC_FLAG) != 0
+    pub fn set_flag(&mut self, flag: u8) {
+        self.state_flags |= flag;
     }
 
-    pub fn set_is_public(&mut self, public: bool) {
-        if public {
-            self.state_flags |= Self::IS_PUBLIC_FLAG;
-        } else {
-            self.state_flags &= !Self::IS_PUBLIC_FLAG;
-        }
+    pub fn unset_flag(&mut self, flag: u8) {
+        self.state_flags &= !flag;
     }
 
-    pub fn is_approved_required(&self) -> bool {
-        (self.state_flags & Self::APPROVAL_REQUIRED_FLAG) != 0
-    }
-
-    pub fn set_approved_required(&mut self, approved_required: bool) {
-        if approved_required {
-            self.state_flags |= Self::APPROVAL_REQUIRED_FLAG;
-        } else {
-            self.state_flags &= !Self::APPROVAL_REQUIRED_FLAG;
-        }
+    pub fn get_flag(&self, flag: u8) -> bool {
+        self.state_flags & flag != 0
     }
 
     pub const MIN_SPACE: usize =

@@ -75,13 +75,13 @@ impl CreateEvent<'_> {
 
         require!(start_timestamp < end_timestamp, RumaError::InvalidEventTime);
 
-        let is_public = if is_public { 0000_0001 } else { 0000_0000 };
-        let approval_required = if approval_required {
-            0000_0010
-        } else {
-            0000_0000
-        };
-        let state_flags = is_public | approval_required;
+        let state_flags = 0b0000_0000
+            | if is_public { Event::IS_PUBLIC_FLAG } else { 0 }
+            | if approval_required {
+                Event::APPROVAL_REQUIRED_FLAG
+            } else {
+                0
+            };
 
         let CreateEvent {
             authority,
