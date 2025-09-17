@@ -86,6 +86,7 @@ describe('createEvent', () => {
 
     expect(eventAcc.organizer).toStrictEqual(organizerUserPda);
     expect(eventAcc.capacity).toBe(capacity);
+    expect(eventAcc.registrations).toBe(0);
     expect(eventAcc.startTimestamp.toNumber()).toBe(startTimestamp.toNumber());
     expect(eventAcc.endTimestamp.toNumber()).toBe(endTimestamp.toNumber());
     expect(eventAcc.badge).toStrictEqual(collection.publicKey);

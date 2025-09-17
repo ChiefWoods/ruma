@@ -97,6 +97,7 @@ impl CreateEvent<'_> {
             organizer: user.key(),
             state_flags,
             capacity,
+            registrations: 0,
             start_timestamp,
             end_timestamp,
             badge: collection.key(),

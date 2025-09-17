@@ -11,6 +11,7 @@ pub struct CreateTicket<'info> {
     pub authority: Signer<'info>,
     #[account(has_one = authority)]
     pub user: Account<'info, User>,
+    #[account(mut)]
     pub event: Account<'info, Event>,
     #[account(
         init,
@@ -40,6 +41,8 @@ impl CreateTicket<'_> {
             event: event.key(),
             status: TicketStatus::default(),
         });
+
+        event.registrations += 1;
 
         ticket.invariant()
     }

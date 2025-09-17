@@ -12,6 +12,8 @@ pub struct Event {
     pub state_flags: u8, // 1
     /// Max amount of attendees
     pub capacity: Option<u32>, // 1 + 4
+    /// Current amount of registrations
+    pub registrations: u32, // 4
     /// Starting time of the event
     pub start_timestamp: i64, // 8
     /// Ending time of the event
@@ -45,8 +47,19 @@ impl Event {
         self.state_flags & flag != 0
     }
 
-    pub const MIN_SPACE: usize =
-        Event::DISCRIMINATOR.len() + 1 + 32 + 1 + (1 + 4) + 8 + 8 + 32 + 4 + 4 + (1 + 4) + (1 + 4);
+    pub const MIN_SPACE: usize = Event::DISCRIMINATOR.len()
+        + 1
+        + 32
+        + 1
+        + (1 + 4)
+        + 4
+        + 8
+        + 8
+        + 32
+        + 4
+        + 4
+        + (1 + 4)
+        + (1 + 4);
 
     pub fn space(name: &str, image: &str, location: Option<&str>, about: Option<&str>) -> usize {
         Self::MIN_SPACE

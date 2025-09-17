@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { Ruma } from '../../target/types/ruma';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { expectAnchorError, getSetup } from '../setup';
-import { fetchTicketAcc } from '../accounts';
+import { fetchEventAcc, fetchTicketAcc } from '../accounts';
 import { getTicketPda, getEventPda, getUserPda } from '../pda';
 import { MPL_CORE_PROGRAM_ID } from '@metaplex-foundation/mpl-core';
 import { Umi } from '@metaplex-foundation/umi';
@@ -102,6 +102,10 @@ describe('createTicket', () => {
     expect(ticketAcc.user).toStrictEqual(attendeeUserPda);
     expect(ticketAcc.event).toStrictEqual(eventPda);
     expect(ticketAcc.status).toEqual({ pending: {} });
+
+    const eventAcc = await fetchEventAcc(program, eventPda);
+
+    expect(eventAcc.registrations).toBe(1);
   });
 
   test('throws if registering after event has ended', async () => {
