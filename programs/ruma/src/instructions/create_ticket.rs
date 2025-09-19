@@ -35,11 +35,17 @@ impl CreateTicket<'_> {
 
         event.invalidate()?;
 
+        let status = if event.get_flag(Event::APPROVAL_REQUIRED_FLAG) {
+            TicketStatus::default()
+        } else {
+            TicketStatus::Approved
+        };
+
         ticket.set_inner(Ticket {
             bump: ctx.bumps.ticket,
             user: user.key(),
             event: event.key(),
-            status: TicketStatus::default(),
+            status,
         });
 
         event.registrations += 1;

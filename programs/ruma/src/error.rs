@@ -28,4 +28,6 @@ pub enum RumaError {
     AttendeeNotApproved,
     #[msg("Attendee already checked in")]
     AttendeeAlreadyCheckedIn,
+    #[msg("Attendee already approved")]
+    AttendeeAlreadyApproved,
 }

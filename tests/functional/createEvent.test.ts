@@ -44,9 +44,9 @@ describe('createEvent', () => {
       .rpc();
   });
 
-  test('creates an event account', async () => {
+  test('creates an event', async () => {
     const isPublic = true;
-    const approvalRequired = false;
+    const approvalRequired = true;
     const capacity = 100;
     const unixTimestamp = Math.floor(Date.now() / 1000);
     const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);
@@ -114,7 +114,7 @@ describe('createEvent', () => {
 
   test('throws if start time is after end time', async () => {
     const isPublic = true;
-    const approvalRequired = false;
+    const approvalRequired = true;
     const capacity = 100;
     const unixTimestamp = Math.floor(Date.now() / 1000);
     const startTimestamp = new BN(Number(unixTimestamp) + 60 * 60);

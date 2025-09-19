@@ -55,7 +55,7 @@ describe('updateTicket', () => {
     await program.methods
       .createEvent({
         isPublic: true,
-        approvalRequired: false,
+        approvalRequired: true,
         capacity: 100,
         startTimestamp: new BN(Number(unixTimestamp) + 1000 * 60 * 60),
         endTimestamp: new BN(Number(unixTimestamp) + 1000 * 60 * 60 * 2),

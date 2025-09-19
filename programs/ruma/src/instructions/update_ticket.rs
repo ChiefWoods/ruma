@@ -16,6 +16,7 @@ pub struct UpdateTicket<'info> {
         mut,
         has_one = event,
         constraint = ticket.status != TicketStatus::CheckedIn @ RumaError::AttendeeAlreadyCheckedIn,
+        constraint = ticket.status != TicketStatus::Approved @ RumaError::AttendeeAlreadyApproved,
     )]
     pub ticket: Account<'info, Ticket>,
     pub system_program: Program<'info, System>,

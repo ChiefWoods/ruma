@@ -53,7 +53,7 @@ describe('createTicket', () => {
     await program.methods
       .createEvent({
         isPublic: true,
-        approvalRequired: false,
+        approvalRequired: true,
         capacity: 100,
         startTimestamp: new BN(Number(unixTimestamp) + 60 * 60),
         endTimestamp: new BN(Number(unixTimestamp) + 60 * 60 * 2),
@@ -85,7 +85,7 @@ describe('createTicket', () => {
       .rpc();
   });
 
-  test('registers for event', async () => {
+  test('registers for event with approval required', async () => {
     await program.methods
       .createTicket()
       .accountsPartial({
@@ -106,6 +106,51 @@ describe('createTicket', () => {
     const eventAcc = await fetchEventAcc(program, eventPda);
 
     expect(eventAcc.registrations).toBe(1);
+  });
+
+  test('registers for event with no approval required', async () => {
+    const unixTimestamp = Math.floor(Date.now() / 1000);
+    const collection = Keypair.generate();
+
+    await program.methods
+      .createEvent({
+        isPublic: true,
+        approvalRequired: false,
+        capacity: 100,
+        startTimestamp: new BN(Number(unixTimestamp) + 60 * 60),
+        endTimestamp: new BN(Number(unixTimestamp) + 60 * 60 * 2),
+        eventName: 'Event',
+        eventImage: 'https://example.com/image.png',
+        badgeName: 'Badge',
+        badgeUri: 'https://example.com/badge.json',
+        location: 'Location',
+        about: 'About',
+      })
+      .accountsPartial({
+        authority: walletA.publicKey,
+        collection: collection.publicKey,
+        user: organizerUserPda,
+        mplCoreProgram: MPL_CORE_PROGRAM_ID,
+      })
+      .signers([walletA, collection])
+      .rpc();
+
+    const eventPda = getEventPda(organizerUserPda, collection.publicKey);
+
+    await program.methods
+      .createTicket()
+      .accountsPartial({
+        authority: walletB.publicKey,
+        user: attendeeUserPda,
+        event: eventPda,
+      })
+      .signers([walletB])
+      .rpc();
+
+    const ticketPda = getTicketPda(attendeeUserPda, eventPda);
+    const ticketAcc = await fetchTicketAcc(program, ticketPda);
+
+    expect(ticketAcc.status).toEqual({ approved: {} });
   });
 
   test('throws if registering after event has ended', async () => {
