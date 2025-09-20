@@ -95,7 +95,7 @@ describe('createEvent', () => {
     expect(eventAcc.location).toBe(location);
     expect(eventAcc.about).toBe(about);
 
-    const stateFlags = new EventStateFlag(eventAcc.stateFlags);
+    const stateFlags = new EventStateFlag(eventAcc.stateFlags[0]);
 
     expect(stateFlags.isPublic).toBe(isPublic);
     expect(stateFlags.isApprovalRequired).toBe(approvalRequired);

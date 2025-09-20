@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, Discriminator};
 
-use crate::error::RumaError;
+use crate::{bitflag::Bitflag, error::RumaError};
 
 #[account]
 pub struct Event {
@@ -9,7 +9,7 @@ pub struct Event {
     /// Authority of the event
     pub organizer: Pubkey, // 32
     /// State flags
-    pub state_flags: u8, // 1
+    pub state_flags: Bitflag,
     /// Max amount of attendees
     pub capacity: Option<u32>, // 1 + 4
     /// Current amount of registrations
@@ -35,22 +35,10 @@ impl Event {
     pub const IS_PUBLIC_FLAG: u8 = 1 << 0;
     pub const APPROVAL_REQUIRED_FLAG: u8 = 1 << 1;
 
-    pub fn set_flag(&mut self, flag: u8) {
-        self.state_flags |= flag;
-    }
-
-    pub fn unset_flag(&mut self, flag: u8) {
-        self.state_flags &= !flag;
-    }
-
-    pub fn get_flag(&self, flag: u8) -> bool {
-        self.state_flags & flag != 0
-    }
-
     pub const MIN_SPACE: usize = Event::DISCRIMINATOR.len()
         + 1
         + 32
-        + 1
+        + Bitflag::INIT_SPACE
         + (1 + 4)
         + 4
         + 8

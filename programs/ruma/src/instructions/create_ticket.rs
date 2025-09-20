@@ -1,6 +1,7 @@
 use anchor_lang::{prelude::*, Discriminator};
 
 use crate::{
+    bitflag::Bitflag,
     constants::TICKET_SEED,
     state::{Event, Ticket, TicketStatus, User},
 };
@@ -35,7 +36,7 @@ impl CreateTicket<'_> {
 
         event.invalidate()?;
 
-        let status = if event.get_flag(Event::APPROVAL_REQUIRED_FLAG) {
+        let status = if event.state_flags.get_flag(Event::APPROVAL_REQUIRED_FLAG) {
             TicketStatus::default()
         } else {
             TicketStatus::Approved

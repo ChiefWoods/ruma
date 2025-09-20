@@ -5,6 +5,7 @@ use mpl_core::{
 };
 
 use crate::{
+    bitflag::Bitflag,
     constants::EVENT_SEED,
     error::RumaError,
     state::{Event, User},
@@ -95,7 +96,7 @@ impl CreateEvent<'_> {
         event.set_inner(Event {
             bump: ctx.bumps.event,
             organizer: user.key(),
-            state_flags,
+            state_flags: Bitflag(state_flags),
             capacity,
             registrations: 0,
             start_timestamp,
