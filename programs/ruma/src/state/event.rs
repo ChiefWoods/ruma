@@ -77,4 +77,16 @@ impl Event {
 
         Ok(())
     }
+
+    pub fn state_flags(is_public: bool, approval_required: bool) -> Bitflag {
+        let bitflag = 0b0000_0000
+            | if is_public { Self::IS_PUBLIC_FLAG } else { 0 }
+            | if approval_required {
+                Self::APPROVAL_REQUIRED_FLAG
+            } else {
+                0
+            };
+
+        Bitflag(bitflag)
+    }
 }

@@ -76,13 +76,7 @@ impl CreateEvent<'_> {
 
         require!(start_timestamp < end_timestamp, RumaError::InvalidEventTime);
 
-        let state_flags = 0b0000_0000
-            | if is_public { Event::IS_PUBLIC_FLAG } else { 0 }
-            | if approval_required {
-                Event::APPROVAL_REQUIRED_FLAG
-            } else {
-                0
-            };
+        let state_flags = Event::state_flags(is_public, approval_required);
 
         let CreateEvent {
             authority,
@@ -96,7 +90,7 @@ impl CreateEvent<'_> {
         event.set_inner(Event {
             bump: ctx.bumps.event,
             organizer: user.key(),
-            state_flags: Bitflag(state_flags),
+            state_flags,
             capacity,
             registrations: 0,
             start_timestamp,
@@ -104,8 +98,8 @@ impl CreateEvent<'_> {
             badge: collection.key(),
             name: event_name,
             image: event_image,
-            location: location,
-            about: about,
+            location,
+            about,
         });
 
         CreateCollectionV2CpiBuilder::new(&mpl_core_program.to_account_info())
