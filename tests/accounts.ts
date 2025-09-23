@@ -21,14 +21,27 @@ export async function fetchTicketAcc(
 }
 
 export class EventStateFlag {
-  readonly IS_PUBLIC = 1 << 0;
-  readonly APPROVAL_REQUIRED = 1 << 1;
+  static readonly IS_PUBLIC = 1 << 0;
+  static readonly APPROVAL_REQUIRED = 1 << 1;
 
   isPublic: boolean;
-  isApprovalRequired: boolean;
+  approvalRequired: boolean;
 
-  constructor(bitflag: number) {
-    this.isPublic = (bitflag & this.IS_PUBLIC) !== 0;
-    this.isApprovalRequired = (bitflag & this.APPROVAL_REQUIRED) !== 0;
+  constructor(isPublic: boolean, approvalRequired: boolean) {
+    this.isPublic = isPublic;
+    this.approvalRequired = approvalRequired;
+  }
+
+  static fromBitflag(bitflag: number): EventStateFlag {
+    const isPublic = (bitflag & EventStateFlag.IS_PUBLIC) !== 0;
+    const approvalRequired = (bitflag & EventStateFlag.APPROVAL_REQUIRED) !== 0;
+    return new EventStateFlag(isPublic, approvalRequired);
+  }
+
+  static getBitflag(isPublic: boolean, approvalRequired: boolean): number {
+    let bitflag = 0b0000_0000;
+    if (isPublic) bitflag |= 1 << 0;
+    if (approvalRequired) bitflag |= 1 << 1;
+    return bitflag;
   }
 }
