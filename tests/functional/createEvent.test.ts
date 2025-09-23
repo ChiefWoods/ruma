@@ -96,7 +96,7 @@ describe('createEvent', () => {
     expect(eventAcc.about).toBe(about);
 
     const stateFlags = new EventStateFlag(isPublic, approvalRequired);
-    const accStateFlags = EventStateFlag.fromBitflag(eventAcc.stateFlags[0]);
+    const accStateFlags = EventStateFlag.fromBitmask(eventAcc.stateFlags[0]);
 
     expect(stateFlags.isPublic).toBe(accStateFlags.isPublic);
     expect(stateFlags.approvalRequired).toBe(accStateFlags.approvalRequired);

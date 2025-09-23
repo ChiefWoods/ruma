@@ -32,16 +32,16 @@ export class EventStateFlag {
     this.approvalRequired = approvalRequired;
   }
 
-  static fromBitflag(bitflag: number): EventStateFlag {
-    const isPublic = (bitflag & EventStateFlag.IS_PUBLIC) !== 0;
-    const approvalRequired = (bitflag & EventStateFlag.APPROVAL_REQUIRED) !== 0;
+  static fromBitmask(bitmask: number): EventStateFlag {
+    const isPublic = (bitmask & EventStateFlag.IS_PUBLIC) !== 0;
+    const approvalRequired = (bitmask & EventStateFlag.APPROVAL_REQUIRED) !== 0;
     return new EventStateFlag(isPublic, approvalRequired);
   }
 
-  static getBitflag(isPublic: boolean, approvalRequired: boolean): number {
-    let bitflag = 0b0000_0000;
-    if (isPublic) bitflag |= 1 << 0;
-    if (approvalRequired) bitflag |= 1 << 1;
-    return bitflag;
+  static getBitmask(isPublic: boolean, approvalRequired: boolean): number {
+    let bitmask = 0b0000_0000;
+    if (isPublic) bitmask |= 1 << 0;
+    if (approvalRequired) bitmask |= 1 << 1;
+    return bitmask;
   }
 }

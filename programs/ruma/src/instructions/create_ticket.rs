@@ -1,7 +1,6 @@
 use anchor_lang::{prelude::*, Discriminator};
 
 use crate::{
-    bitflag::Bitflag,
     constants::TICKET_SEED,
     state::{Event, Ticket, TicketStatus, User},
 };

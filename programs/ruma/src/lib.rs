@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use {instructions::*, state::*};
 
-pub mod bitflag;
+pub mod bitmask;
 pub mod constants;
 pub mod error;
 pub mod instructions;

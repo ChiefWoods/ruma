@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct Bitflag(pub u8);
+pub struct Bitmask(pub u8);
 
-impl Bitflag {
+impl Bitmask {
     pub fn set_flag(&mut self, flag: u8) {
         self.0 |= flag;
     }
@@ -17,6 +17,6 @@ impl Bitflag {
     }
 }
 
-impl Space for Bitflag {
+impl Space for Bitmask {
     const INIT_SPACE: usize = 1;
 }

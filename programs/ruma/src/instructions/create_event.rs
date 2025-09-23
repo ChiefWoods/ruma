@@ -5,7 +5,6 @@ use mpl_core::{
 };
 
 use crate::{
-    bitflag::Bitflag,
     constants::EVENT_SEED,
     error::RumaError,
     state::{Event, User},
