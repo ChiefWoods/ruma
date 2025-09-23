@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { Ruma } from '../../target/types/ruma';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { expectAnchorError, getSetup } from '../setup';
-import { EventStateFlag, fetchEventAcc } from '../accounts';
+import { EventStateFlags, fetchEventAcc } from '../accounts';
 import { getEventPda, getUserPda } from '../pda';
 import {
   fetchCollection,
@@ -95,8 +95,8 @@ describe('createEvent', () => {
     expect(eventAcc.location).toBe(location);
     expect(eventAcc.about).toBe(about);
 
-    const stateFlags = new EventStateFlag(isPublic, approvalRequired);
-    const accStateFlags = EventStateFlag.fromBitmask(eventAcc.stateFlags[0]);
+    const stateFlags = new EventStateFlags(isPublic, approvalRequired);
+    const accStateFlags = EventStateFlags.fromBitmask(eventAcc.stateFlags[0]);
 
     expect(stateFlags.isPublic).toBe(accStateFlags.isPublic);
     expect(stateFlags.approvalRequired).toBe(accStateFlags.approvalRequired);

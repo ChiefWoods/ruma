@@ -20,7 +20,7 @@ export async function fetchTicketAcc(
   return await program.account.ticket.fetchNullable(ticketPda);
 }
 
-export class EventStateFlag {
+export class EventStateFlags {
   static readonly IS_PUBLIC = 1 << 0;
   static readonly APPROVAL_REQUIRED = 1 << 1;
 
@@ -32,10 +32,11 @@ export class EventStateFlag {
     this.approvalRequired = approvalRequired;
   }
 
-  static fromBitmask(bitmask: number): EventStateFlag {
-    const isPublic = (bitmask & EventStateFlag.IS_PUBLIC) !== 0;
-    const approvalRequired = (bitmask & EventStateFlag.APPROVAL_REQUIRED) !== 0;
-    return new EventStateFlag(isPublic, approvalRequired);
+  static fromBitmask(bitmask: number): EventStateFlags {
+    const isPublic = (bitmask & EventStateFlags.IS_PUBLIC) !== 0;
+    const approvalRequired =
+      (bitmask & EventStateFlags.APPROVAL_REQUIRED) !== 0;
+    return new EventStateFlags(isPublic, approvalRequired);
   }
 
   static getBitmask(isPublic: boolean, approvalRequired: boolean): number {
