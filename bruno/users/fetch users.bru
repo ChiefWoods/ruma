@@ -1,0 +1,20 @@
+meta {
+  name: fetch users
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:3000/api/accounts/users?name=Winter Admin
+  body: none
+  auth: inherit
+}
+
+params:query {
+  name: Winter Admin
+  ~pda: 2GbPvQwJesmU1tKhM9TcbCf6dD1yz6zPQ6CVWck3Jt6w
+}
+
+settings {
+  encodeUrl: true
+}

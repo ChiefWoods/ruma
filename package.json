@@ -1,10 +1,18 @@
 {
   "type": "module",
   "license": "ISC",
+  "workspaces": [
+    "app"
+  ],
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "prepare": "husky",
+    "surfpool:start": "surfpool start -k ruma-wallet.json -u 'https://api.mainnet-beta.solana.com' --watch",
+    "deploy": "anchor deploy -p ruma --provider.cluster 'https://api.devnet.solana.com' --program-keypair target/deploy/ruma-keypair.json --provider.wallet ruma-wallet.json",
+    "idl:sync": "cp target/idl/ruma.json app/src/idl/ruma.json; cp target/types/ruma.ts app/src/types/ruma.ts",
+    "idl:init": "anchor idl init $(anchor keys list | grep 'ruma:' | awk '{print $2}') -f target/idl/ruma.json --provider.cluster 'https://api.devnet.solana.com' --provider.wallet ruma-wallet.json",
+    "idl:upgrade": "anchor idl upgrade $(anchor keys list | grep 'ruma:' | awk '{print $2}') -f target/idl/ruma.json --provider.cluster 'https://api.devnet.solana.com' --provider.wallet ruma-wallet.json",
     "act:test": "act -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:runner-latest"
   },
   "devDependencies": {

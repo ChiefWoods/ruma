@@ -1,31 +1,23 @@
 import { PublicKey } from '@solana/web3.js';
-import {
-  ATTENDEE_SEED,
-  EVENT_SEED,
-  RUMA_PROGRAM_ID,
-  USER_SEED,
-} from '@/lib/constants';
+import { RUMA_PROGRAM } from './solana';
 
-export function getUserPda(authority: PublicKey): PublicKey {
+export function getUserPda(authority: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from(USER_SEED), authority.toBuffer()],
-    RUMA_PROGRAM_ID
+    [Buffer.from('user'), authority.toBuffer()],
+    RUMA_PROGRAM.programId
   )[0];
 }
 
-export function getEventPda(userPda: PublicKey, eventName: string): PublicKey {
+export function getEventPda(userPda: PublicKey, collectionPda: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from(EVENT_SEED), userPda.toBuffer(), Buffer.from(eventName)],
-    RUMA_PROGRAM_ID
+    [Buffer.from('event'), userPda.toBuffer(), collectionPda.toBuffer()],
+    RUMA_PROGRAM.programId
   )[0];
 }
 
-export function getAttendeePda(
-  userPda: PublicKey,
-  eventPda: PublicKey
-): PublicKey {
+export function getTicketPda(userPda: PublicKey, eventPda: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from(ATTENDEE_SEED), userPda.toBuffer(), eventPda.toBuffer()],
-    RUMA_PROGRAM_ID
+    [Buffer.from('ticket'), userPda.toBuffer(), eventPda.toBuffer()],
+    RUMA_PROGRAM.programId
   )[0];
 }

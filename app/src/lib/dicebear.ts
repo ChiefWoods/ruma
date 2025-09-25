@@ -1,25 +1,27 @@
-const styleMap = {
-  profile: 'big-smile',
-  event: 'shapes',
-  badge: 'rings',
-};
-
-export function getRandomDicebearLink(
-  style: keyof typeof styleMap,
-  seed: string = ''
-): string {
-  return `https://api.dicebear.com/9.x/${styleMap[style]}/jpg?seed=${seed}`;
+export enum DicebearStyle {
+  User = 'personas',
+  Event = 'shapes',
+  Badge = 'rings',
 }
 
-export async function fetchDicebearAsFile(
-  style: keyof typeof styleMap,
-  name: string
+export async function generateDicebear(
+  style: DicebearStyle,
+  seed: string
 ): Promise<File> {
-  const file = await fetch(getRandomDicebearLink(style), {
-    headers: {
-      'Content-Type': 'image/jpeg',
-    },
-  }).then((res) => res.blob());
+  const res = await fetch(
+    `${process.env.DICEBEAR_API}/${style}/svg?seed=${seed}`,
+    {
+      headers: {
+        'Content-Type': 'image/jpeg',
+      },
+    }
+  );
 
-  return new File([file], name, { type: 'image/jpeg' });
+  if (!res.ok) {
+    throw new Error('Unable to generate image.');
+  }
+
+  const file = await res.blob();
+
+  return new File([file], `user_${seed}`, { type: file.type });
 }

@@ -1,208 +1,83 @@
 import { clsx, type ClassValue } from 'clsx';
+import { formatInTimeZone } from 'date-fns-tz';
 import { twMerge } from 'tailwind-merge';
-import { UseFormReturn } from 'react-hook-form';
-import { RefObject } from 'react';
-import {
-  AddressLookupTableAccount,
-  ComputeBudgetProgram,
-  Connection,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from '@solana/web3.js';
-import { DisplayedEvent } from '@/types/event';
-import { BN } from '@coral-xyz/anchor';
-import { getComputeLimitIx } from '@/app/actions';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-export function handleImageChange(
-  event: React.ChangeEvent<HTMLInputElement>,
-  form: UseFormReturn<any, any, undefined>,
-  formFieldName: string,
-  setProfileImageUri: (image: string) => void
-) {
-  const file = event.target.files?.[0];
-
-  if (file) {
-    form.setValue(formFieldName, file);
-
-    const reader = new FileReader();
-
-    reader.readAsDataURL(file);
-
-    reader.onloadend = () => {
-      setProfileImageUri(reader.result as string);
-    };
-  }
-}
-
-export function handleImageClick(ref: RefObject<HTMLInputElement>) {
-  ref.current?.click();
-}
-
-export function capitalizeFirstLetter(str: string): string {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/^\w/, (c) => c.toUpperCase());
-}
-
-export function toCamelCase(str: string): string {
-  return str
-    .toLowerCase()
-    .split('-')
-    .map((word: string, index: number) =>
-      index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
-    )
-    .join('');
 }
 
 export function truncateAddress(address: string, length: number = 4): string {
   return `${address.slice(0, length)}...${address.slice(-length)}`;
 }
 
-export async function setComputeUnitLimitAndPrice(
-  connection: Connection,
-  instructions: TransactionInstruction[],
-  payer: PublicKey,
-  lookupTables: Array<AddressLookupTableAccount> = []
-): Promise<Transaction> {
-  const tx = new Transaction();
+export function capitalizeFirstLetter(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
-  const limitIx = await getComputeLimitIx(
-    connection,
-    instructions,
-    payer,
-    lookupTables
-  );
-
-  if (limitIx) {
-    tx.add(limitIx);
+export async function copyAddress(address: string) {
+  try {
+    await navigator.clipboard.writeText(address);
+  } catch (err) {
+    console.error(err);
   }
-
-  tx.add(await getComputePriceIx(connection), ...instructions);
-
-  return tx;
 }
 
-export async function getComputePriceIx(
-  connection: Connection
-): Promise<TransactionInstruction> {
-  const recentFees = await connection.getRecentPrioritizationFees();
-  const priorityFee =
-    recentFees.reduce(
-      (acc, { prioritizationFee }) => acc + prioritizationFee,
-      0
-    ) / recentFees.length;
+export function formatDateToTimezone(currentTime: Date) {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timeString = formatInTimeZone(currentTime, timeZone, 'h:mm a');
+  const offsetHours = -currentTime.getTimezoneOffset() / 60;
+  const offsetString =
+    offsetHours >= 0 ? `GMT+${offsetHours}` : `GMT${offsetHours}`;
 
-  return ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports: BigInt(Math.ceil(priorityFee)),
-  });
+  return `${timeString} ${offsetString}`;
 }
 
-export function sortEventsByTimestamp(
-  events: DisplayedEvent[]
-): DisplayedEvent[] {
-  return events.sort(
-    (a, b) =>
-      Number(a.event.account.data.startTimestamp) -
-      Number(b.event.account.data.startTimestamp)
-  );
+export function unixToMilli(unixTimestamp: number): number {
+  return unixTimestamp * 1000;
 }
 
-export function generateDataBytes(
-  attendeePda: string,
-  eventPda: string
-): Uint8Array {
-  const data = `${attendeePda}-${eventPda}`;
-  return new Uint8Array(Buffer.from(data));
+export function milliToUnix(milliTimestamp: number): number {
+  return Math.floor(milliTimestamp / 1000);
 }
 
-export function deserializeProgramAccount(obj: { [key: string]: any } | null) {
-  if (obj === null) {
-    return null;
-  }
+export function formatTimestamp(unixTimestamp: number): string {
+  const date = new Date(unixToMilli(unixTimestamp));
 
-  for (const key in obj) {
-    if (obj[key] instanceof PublicKey) {
-      obj[key] = obj[key].toBase58();
-    } else if (obj[key] instanceof BN) {
-      obj[key] = Number(obj[key]);
-    } else if (Array.isArray(obj[key])) {
-      obj[key] = obj[key].map((item) => deserializeProgramAccount(item));
-    } else if (obj[key] instanceof Object) {
-      obj[key] = deserializeProgramAccount(obj[key]);
-    }
-  }
-
-  return obj;
-}
-
-export async function uploadFile(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.set('file', file);
-
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error);
-  }
-
-  return data.link;
-}
-
-export async function generateTicket(
-  attendeePda: PublicKey,
-  eventPda: PublicKey
-): Promise<string> {
-  const urlSearchParams = new URLSearchParams();
-  urlSearchParams.append('attendeePda', attendeePda.toBase58());
-  urlSearchParams.append('eventPda', eventPda.toBase58());
-
-  const response = await fetch(
-    `/api/ticket/generate?${urlSearchParams.toString()}`
-  );
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error);
-  }
-
-  return data.ticket;
-}
-
-export async function verifyTicket(payload: string): Promise<{
-  verified: boolean;
-  message: string;
-  attendeePda: string;
-  userPda: string;
-}> {
-  const formData = new FormData();
-  formData.set('payload', payload);
-
-  const response = await fetch('/api/ticket/verify', {
-    method: 'POST',
-    body: formData,
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error);
-  }
-
-  return {
-    verified: data.verified,
-    message: data.message,
-    attendeePda: data.attendeePda,
-    userPda: data.userPda,
+  const options = {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
   };
+
+  return (
+    date
+      // @ts-expect-error toLocaleDateString typing issue
+      .toLocaleDateString('en-US', options)
+      .replace(',', ', ')
+      .replace(' at ', ', ')
+  );
+}
+
+export function formatTimestampToTime(unixTimestamp: number) {
+  const date = new Date(unixToMilli(unixTimestamp));
+
+  const options = {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  };
+
+  // @ts-expect-error toLocaleDateString typing issue
+  return date.toLocaleTimeString('en-US', options);
+}
+
+export function formatNameAsParam(name: string): string {
+  return name.replace(/\s+/g, '-');
+}
+
+export function removeDashesFromParam(param: string): string {
+  return param.replace(/-/g, ' ');
 }

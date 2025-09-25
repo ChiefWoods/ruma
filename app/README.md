@@ -1,30 +1,36 @@
-## Setting up `client/`
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-> [!IMPORTANT]
-> Navigate to `client/` before running any of the following commands. <br>
-> Remember to run `bun i` to install all the dependencies.
+## Getting Started
 
-#### 1. Update the `.env` file
+First, run the development server:
 
 ```bash
-cp .env.example .env.development
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Replace the values in the `.env.development` file with your own.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- `NEXT_PUBLIC_RUMA_WALLET` is the private keypair of Solana wallet.
-- `NEXT_PUBLIC_RPC_URL` is the RPC URL of Solana network.
-  - For local deployment, use `http://localhost:8899` by default. <br> Or check local URL by running `solana config get` in `anchor/`.
-  - For devnet deployment, acquire the RPC URL from online providers. <br> Or use `https://api.devnet.solana.com` by default.
-- `NEXT_PUBLIC_RPC_CLUSTER` is the cluster of the Solana network.
-  - `localnet` if you deployed the program locally.
-  - `devnet` if you deployed the program on the devnet.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-#### 2. Run the client
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-```bash
-bun run dev
-```
+## Learn More
 
-> [!WARNING]
-> Make sure you ran `bun run sync` in `anchor/` before running the client.
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

@@ -1,0 +1,824 @@
+{
+  "address": "RUMA3n7Uigup7oprRMKEExme1g5mkcNik7FX6TJphYF",
+  "metadata": {
+    "name": "ruma",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "check_in",
+      "discriminator": [
+        209,
+        253,
+        4,
+        217,
+        250,
+        241,
+        207,
+        50
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "organizer"
+          ]
+        },
+        {
+          "name": "asset",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "organizer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          },
+          "relations": [
+            "event"
+          ]
+        },
+        {
+          "name": "user",
+          "relations": [
+            "ticket"
+          ]
+        },
+        {
+          "name": "event",
+          "relations": [
+            "ticket"
+          ]
+        },
+        {
+          "name": "ticket",
+          "writable": true
+        },
+        {
+          "name": "badge",
+          "writable": true,
+          "relations": [
+            "event"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "mpl_core_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_event",
+      "discriminator": [
+        49,
+        219,
+        29,
+        203,
+        22,
+        98,
+        100,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "user"
+          ]
+        },
+        {
+          "name": "collection",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user"
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "collection"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "mpl_core_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CreateEventArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_ticket",
+      "discriminator": [
+        16,
+        178,
+        122,
+        25,
+        213,
+        85,
+        96,
+        129
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "user"
+          ]
+        },
+        {
+          "name": "user"
+        },
+        {
+          "name": "event",
+          "writable": true
+        },
+        {
+          "name": "ticket",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  99,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_user",
+      "discriminator": [
+        108,
+        227,
+        130,
+        130,
+        252,
+        109,
+        75,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CreateUserArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_ticket",
+      "discriminator": [
+        177,
+        170,
+        60,
+        118,
+        217,
+        184,
+        131,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "organizer"
+          ]
+        },
+        {
+          "name": "organizer",
+          "relations": [
+            "event"
+          ]
+        },
+        {
+          "name": "event",
+          "relations": [
+            "ticket"
+          ]
+        },
+        {
+          "name": "ticket",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "status",
+          "type": {
+            "defined": {
+              "name": "TicketStatus"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "BaseCollectionV1",
+      "discriminator": [
+        5
+      ]
+    },
+    {
+      "name": "Event",
+      "discriminator": [
+        125,
+        192,
+        125,
+        158,
+        9,
+        115,
+        152,
+        233
+      ]
+    },
+    {
+      "name": "Ticket",
+      "discriminator": [
+        41,
+        228,
+        24,
+        165,
+        78,
+        90,
+        235,
+        200
+      ]
+    },
+    {
+      "name": "User",
+      "discriminator": [
+        159,
+        117,
+        95,
+        227,
+        239,
+        151,
+        58,
+        236
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidUserAuthority",
+      "msg": "User authority cannot be default pubkey"
+    },
+    {
+      "code": 6001,
+      "name": "UserNameTooLong",
+      "msg": "User name exceeded max length"
+    },
+    {
+      "code": 6002,
+      "name": "UserImageTooLong",
+      "msg": "User image exceeded max length"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidEventOrganizer",
+      "msg": "Event organizer cannot be default pubkey"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidBadge",
+      "msg": "Event badge cannot be default pubkey"
+    },
+    {
+      "code": 6005,
+      "name": "EventNameTooLong",
+      "msg": "Event name exceeded max length"
+    },
+    {
+      "code": 6006,
+      "name": "EventImageTooLong",
+      "msg": "Event image exceeded max length"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidEventTime",
+      "msg": "Start time must be before end time"
+    },
+    {
+      "code": 6008,
+      "name": "EventHasEnded",
+      "msg": "Event has already ended"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidTicketUser",
+      "msg": "Ticket user cannot be default pubkey"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidTicketEvent",
+      "msg": "Ticket event cannot be default pubkey"
+    },
+    {
+      "code": 6011,
+      "name": "AttendeeNotApproved",
+      "msg": "Attendee not approved by organizer"
+    },
+    {
+      "code": 6012,
+      "name": "AttendeeAlreadyCheckedIn",
+      "msg": "Attendee already checked in"
+    },
+    {
+      "code": 6013,
+      "name": "AttendeeAlreadyApproved",
+      "msg": "Attendee already approved"
+    }
+  ],
+  "types": [
+    {
+      "name": "BaseCollectionV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": {
+                "name": "Key"
+              }
+            }
+          },
+          {
+            "name": "update_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "num_minted",
+            "type": "u32"
+          },
+          {
+            "name": "current_size",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Bitmask",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          "u8"
+        ]
+      }
+    },
+    {
+      "name": "CreateEventArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "is_public",
+            "type": "bool"
+          },
+          {
+            "name": "approval_required",
+            "type": "bool"
+          },
+          {
+            "name": "capacity",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "start_timestamp",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "end_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "event_name",
+            "type": "string"
+          },
+          {
+            "name": "event_image",
+            "type": "string"
+          },
+          {
+            "name": "badge_name",
+            "type": "string"
+          },
+          {
+            "name": "badge_uri",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "about",
+            "type": {
+              "option": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateUserArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "image",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Event",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "docs": [
+              "Bump used to derive address"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "organizer",
+            "docs": [
+              "Authority of the event"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "state_flags",
+            "docs": [
+              "State flags"
+            ],
+            "type": {
+              "defined": {
+                "name": "Bitmask"
+              }
+            }
+          },
+          {
+            "name": "capacity",
+            "docs": [
+              "Max amount of attendees"
+            ],
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "registrations",
+            "docs": [
+              "Current amount of registrations"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "start_timestamp",
+            "docs": [
+              "Starting time of the event"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "end_timestamp",
+            "docs": [
+              "Ending time of the event"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "badge",
+            "docs": [
+              "NFT awarded to checked-in attendees"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "docs": [
+              "Name of the event"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "image",
+            "docs": [
+              "Image URI of the event"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "docs": [
+              "Location of the event"
+            ],
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "about",
+            "docs": [
+              "Description of the event"
+            ],
+            "type": {
+              "option": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Key",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Uninitialized"
+          },
+          {
+            "name": "AssetV1"
+          },
+          {
+            "name": "HashedAssetV1"
+          },
+          {
+            "name": "PluginHeaderV1"
+          },
+          {
+            "name": "PluginRegistryV1"
+          },
+          {
+            "name": "CollectionV1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Ticket",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "docs": [
+              "Bump used to derive address"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "user",
+            "docs": [
+              "User that owns this ticket"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "event",
+            "docs": [
+              "Event registered"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Approval status of the user for the event"
+            ],
+            "type": {
+              "defined": {
+                "name": "TicketStatus"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Approved"
+          },
+          {
+            "name": "CheckedIn"
+          },
+          {
+            "name": "Rejected"
+          }
+        ]
+      }
+    },
+    {
+      "name": "User",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "docs": [
+              "Bump used to derive address"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "authority",
+            "docs": [
+              "Authority of the user"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "docs": [
+              "Name of the organizer"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "image",
+            "docs": [
+              "Image URI of the organizer"
+            ],
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "EVENT_SEED",
+      "type": "bytes",
+      "value": "[101, 118, 101, 110, 116]"
+    },
+    {
+      "name": "MAX_USER_NAME_LENGTH",
+      "type": "u8",
+      "value": "32"
+    },
+    {
+      "name": "TICKET_SEED",
+      "type": "bytes",
+      "value": "[116, 105, 99, 107, 101, 116]"
+    },
+    {
+      "name": "USER_SEED",
+      "type": "bytes",
+      "value": "[117, 115, 101, 114]"
+    }
+  ]
+}

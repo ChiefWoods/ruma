@@ -1,0 +1,20 @@
+meta {
+  name: fetch events
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:3000/api/accounts/events?user=/api/accounts/tickets?user=5yg3MUYcwRDFJxoP7uXjHdgA66KKv2RATqt5GoifBBZA
+  body: none
+  auth: inherit
+}
+
+params:query {
+  user: /api/accounts/tickets?user=5yg3MUYcwRDFJxoP7uXjHdgA66KKv2RATqt5GoifBBZA
+  ~status: checkedIn
+}
+
+settings {
+  encodeUrl: true
+}

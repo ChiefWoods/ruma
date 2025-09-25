@@ -1,13 +1,25 @@
 import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { SolanaProvider } from '@/components/SolanaProvider';
-import { SWRConfig } from 'swr';
+import { Providers } from '@/components/Providers';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { Toaster } from '@/components/ui/sonner';
+import { Header } from '@/components/Header';
+import { CreateProfileDialog } from '@/components/formDialogs/CreateProfileDialog';
+
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+});
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
 
 export const metadata: Metadata = {
-  title: 'RUMA',
-  description: 'NFT-based Event Platform',
+  title: 'Ruma',
+  description: 'Event hosting platform on Solana.',
 };
 
 export default function RootLayout({
@@ -17,14 +29,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="flex min-h-screen flex-col">
-        <SWRConfig value={{ suspense: false, revalidateOnFocus: false }}>
-          <SolanaProvider>
-            <Navbar />
-            <main className="mt-24 flex-grow">{children}</main>
-            <Footer />
-          </SolanaProvider>
-        </SWRConfig>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Providers>
+          <LoadingOverlay />
+          <Header />
+          <main>{children}</main>
+          <CreateProfileDialog />
+        </Providers>
+        <Toaster richColors closeButton />
       </body>
     </html>
   );
