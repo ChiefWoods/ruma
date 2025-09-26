@@ -5,7 +5,7 @@
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "prepare": "husky",
-    "surfpool:start": "surfpool start -k ruma-wallet.json"
+    "act:test": "act -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:runner-latest"
   },
   "devDependencies": {
     "@coral-xyz/anchor": "^0.31.1",

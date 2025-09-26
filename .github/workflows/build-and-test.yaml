@@ -1,0 +1,137 @@
+name: Build and Test Program
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'programs/**'
+      - 'tests/**'
+      - 'Anchor.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'package.json'
+      - 'bun.lockb'
+
+env:
+  SOLANA_VERSION: '2.1.0'
+  ANCHOR_VERSION: '0.31.1'
+  PROGRAM_NAME: 'ruma'
+  FEATURES: ''
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    environment: workflow
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config build-essential libudev-dev
+
+      - name: Install Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Cargo toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: rustc
+
+      - name: Set Cargo path
+        run: echo "/home/runner/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache Solana CLI tools
+        id: cache-solana-cli
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/solana/
+            ~/.local/share/solana/
+          key: solana-${{ runner.os }}-v0001-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana CLI tools
+        if: steps.cache-solana-cli.outputs.cache-hit != 'true'
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+
+      - name: Set Solana path
+        run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Cache Anchor CLI
+        id: cache-anchor-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/anchor
+          key: anchor-cli-${{ runner.os }}-v0003-${{ env.ANCHOR_VERSION }}
+
+      - name: Install Anchor CLI
+        if: steps.cache-anchor-cli.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/solana-foundation/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli
+          anchor --version
+
+      - name: Cache Surfpool
+        id: cache-surfpool
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/surfpool
+          key: surfpool-${{ runner.os }}-v0001
+
+      - name: Install Surfpool
+        if: steps.cache-surfpool.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/txtx/surfpool.git /tmp/surfpool
+          cd /tmp/surfpool
+          cargo surfpool-install
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Sync Anchor program ID
+        run: anchor keys sync
+
+      - name: Build program
+        run: anchor build ${FEATURES:+-- --features $FEATURES}
+
+      - name: Generate keypair for testing
+        run: |
+          solana-keygen new --no-bip39-passphrase --silent -o ruma-wallet.json
+          echo "ANCHOR_WALLET=$(cat ruma-wallet.json)" >> $GITHUB_ENV
+          echo "Generated keypair and set ANCHOR_WALLET environment variable"
+
+      - name: Start Surfpool
+        run: |
+          surfpool start -k ruma-wallet.json -u ${{ secrets.SOLANA_RPC_URL }} -o 127.0.0.1 -p 8899 --no-tui --no-studio &
+          echo "Surfpool started with PID: $!"
+          # Give Surfpool a moment to start up
+          sleep 5
+
+      - name: Run tests
+        run: bun test
+
+      - name: Stop Surfpool
+        if: always()
+        run: |
+          pkill -f surfpool || true
